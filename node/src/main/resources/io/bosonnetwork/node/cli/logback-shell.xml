@@ -2,7 +2,8 @@
 <!--
   The DHT shell's fallback logging configuration, used when no other one is named or the one named
   does not exist. It logs to a file only: anything written to the console lands on the prompt.
-  LOG_DIR is set by dht-shell.sh, and defaults to ~/.cache/boson/shell/logs.
+  LOG_DIR comes from the system property or environment variable of that name; NodeLogging sets it
+  to ~/.cache/boson/shell/logs when neither is given.
 -->
 <configuration>
   <appender name="ROLLING" class="ch.qos.logback.core.rolling.RollingFileAppender">
