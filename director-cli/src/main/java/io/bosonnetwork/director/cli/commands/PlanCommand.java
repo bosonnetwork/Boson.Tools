@@ -32,12 +32,12 @@ import picocli.CommandLine.Command;
 import picocli.CommandLine.Option;
 import picocli.CommandLine.Parameters;
 
-import io.bosonnetwork.cli.support.CliCommand;
-import io.bosonnetwork.cli.support.CliContext;
-import io.bosonnetwork.cli.support.CliException;
-import io.bosonnetwork.cli.support.CliGroup;
-import io.bosonnetwork.cli.support.ExitCode;
-import io.bosonnetwork.cli.support.Listing;
+import io.bosonnetwork.cli.director.DirectorCommand;
+import io.bosonnetwork.cli.director.CliContext;
+import io.bosonnetwork.cli.common.CliException;
+import io.bosonnetwork.cli.common.CliGroup;
+import io.bosonnetwork.cli.common.ExitCode;
+import io.bosonnetwork.cli.common.Listing;
 import io.bosonnetwork.director.cli.AdminViews;
 import io.bosonnetwork.director.cli.Arguments;
 import io.bosonnetwork.director.cli.Arguments.PlanRef;
@@ -58,7 +58,7 @@ import io.bosonnetwork.director.client.exceptions.NotFoundException;
 public class PlanCommand extends CliGroup {
 
 	@Command(name = "list", description = "List every plan, including the inactive ones.")
-	public static class ListCommand extends CliCommand {
+	public static class ListCommand extends DirectorCommand {
 		@Override
 		protected void run() throws Exception {
 			List<Plan> plans = await(context().directorAdmin().listPlans());
@@ -68,7 +68,7 @@ public class PlanCommand extends CliGroup {
 	}
 
 	@Command(name = "show", description = "Show a plan.")
-	public static class ShowCommand extends CliCommand {
+	public static class ShowCommand extends DirectorCommand {
 		@Parameters(paramLabel = "<plan>", converter = Arguments.PlanRefConverter.class, description = "The plan's id or name.")
 		PlanRef plan;
 
@@ -86,7 +86,7 @@ public class PlanCommand extends CliGroup {
 
 	@Command(name = "add", description = {"Add a plan, billed monthly.",
 			"A new plan is not offered to subscribers until it is active: pass --active, or activate it later."})
-	public static class AddCommand extends CliCommand {
+	public static class AddCommand extends DirectorCommand {
 		@Parameters(paramLabel = "<name>", description = "The plan's name.")
 		String name;
 
@@ -141,7 +141,7 @@ public class PlanCommand extends CliGroup {
 	@Command(name = "update", description = {"Change a plan.",
 			"Only the fields given change; an empty description or detail clears it. A plan's currency cannot change. "
 					+ "To offer or withdraw a plan, use activate and deactivate."})
-	public static class UpdateCommand extends CliCommand {
+	public static class UpdateCommand extends DirectorCommand {
 		@Parameters(paramLabel = "<plan>", converter = Arguments.PlanRefConverter.class, description = "The plan's id or name.")
 		PlanRef plan;
 
@@ -198,7 +198,7 @@ public class PlanCommand extends CliGroup {
 	}
 
 	@Command(name = "activate", description = "Offer a plan to new subscribers.")
-	public static class ActivateCommand extends CliCommand {
+	public static class ActivateCommand extends DirectorCommand {
 		@Parameters(paramLabel = "<plan>", converter = Arguments.PlanRefConverter.class, description = "The plan's id or name.")
 		PlanRef plan;
 
@@ -214,7 +214,7 @@ public class PlanCommand extends CliGroup {
 	}
 
 	@Command(name = "deactivate", description = "Withdraw a plan from new subscribers. Existing subscriptions are not affected.")
-	public static class DeactivateCommand extends CliCommand {
+	public static class DeactivateCommand extends DirectorCommand {
 		@Parameters(paramLabel = "<plan>", converter = Arguments.PlanRefConverter.class, description = "The plan's id or name.")
 		PlanRef plan;
 

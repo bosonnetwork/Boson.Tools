@@ -34,14 +34,14 @@ import picocli.CommandLine.Option;
 import picocli.CommandLine.Parameters;
 
 import io.bosonnetwork.Id;
-import io.bosonnetwork.cli.support.CliCommand;
-import io.bosonnetwork.cli.support.CliContext;
-import io.bosonnetwork.cli.support.CliException;
-import io.bosonnetwork.cli.support.CliGroup;
-import io.bosonnetwork.cli.support.ExitCode;
-import io.bosonnetwork.cli.support.IdentityFile;
-import io.bosonnetwork.cli.support.Listing;
-import io.bosonnetwork.cli.support.Views;
+import io.bosonnetwork.cli.director.DirectorCommand;
+import io.bosonnetwork.cli.director.CliContext;
+import io.bosonnetwork.cli.common.CliException;
+import io.bosonnetwork.cli.common.CliGroup;
+import io.bosonnetwork.cli.common.ExitCode;
+import io.bosonnetwork.cli.common.IdentityFile;
+import io.bosonnetwork.cli.common.Listing;
+import io.bosonnetwork.cli.director.Views;
 import io.bosonnetwork.crypto.Signature;
 import io.bosonnetwork.director.client.Device;
 import io.bosonnetwork.director.client.DirectorClient;
@@ -57,7 +57,7 @@ import io.bosonnetwork.director.client.exceptions.NotFoundException;
 public class DeviceCommand extends CliGroup {
 
 	@Command(name = "list", description = "List the devices registered to your account.")
-	public static class ListCommand extends CliCommand {
+	public static class ListCommand extends DirectorCommand {
 		@Override
 		protected void run() throws Exception {
 			List<Device> devices = await(context().directorClient().listDevices());
@@ -68,7 +68,7 @@ public class DeviceCommand extends CliGroup {
 
 	@Command(name = "add", description = {"Register a device to your account.",
 			"The device key signs the registration, proving the device holds it; it is not sent."})
-	public static class AddCommand extends CliCommand {
+	public static class AddCommand extends DirectorCommand {
 		@Option(names = "--key", paramLabel = "<file>", required = true,
 				description = "The identity file of the device. Create one with 'boson-cli util keygen --output <file>'.")
 		Path keyFile;
@@ -112,7 +112,7 @@ public class DeviceCommand extends CliGroup {
 	}
 
 	@Command(name = "remove", description = "Remove a device from your account. It can no longer act for you.")
-	public static class RemoveCommand extends CliCommand {
+	public static class RemoveCommand extends DirectorCommand {
 		@Parameters(paramLabel = "<device-id>", description = "The device, as 'boson-cli device list' shows it.")
 		Id deviceId;
 

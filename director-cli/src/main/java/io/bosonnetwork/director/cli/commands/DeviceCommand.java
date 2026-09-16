@@ -31,12 +31,12 @@ import picocli.CommandLine.Option;
 import picocli.CommandLine.Parameters;
 
 import io.bosonnetwork.Id;
-import io.bosonnetwork.cli.support.CliCommand;
-import io.bosonnetwork.cli.support.CliException;
-import io.bosonnetwork.cli.support.CliGroup;
-import io.bosonnetwork.cli.support.ExitCode;
-import io.bosonnetwork.cli.support.Listing;
-import io.bosonnetwork.cli.support.Views;
+import io.bosonnetwork.cli.director.DirectorCommand;
+import io.bosonnetwork.cli.common.CliException;
+import io.bosonnetwork.cli.common.CliGroup;
+import io.bosonnetwork.cli.common.ExitCode;
+import io.bosonnetwork.cli.common.Listing;
+import io.bosonnetwork.cli.director.Views;
 import io.bosonnetwork.director.client.Device;
 import io.bosonnetwork.director.client.DirectorAdmin;
 import io.bosonnetwork.director.client.exceptions.ConflictException;
@@ -51,7 +51,7 @@ import io.bosonnetwork.director.client.exceptions.NotFoundException;
 public class DeviceCommand extends CliGroup {
 
 	@Command(name = "list", description = "List a user's devices.")
-	public static class ListCommand extends CliCommand {
+	public static class ListCommand extends DirectorCommand {
 		@Parameters(paramLabel = "<user-id>", description = "The user.")
 		Id userId;
 
@@ -69,7 +69,7 @@ public class DeviceCommand extends CliGroup {
 	}
 
 	@Command(name = "show", description = "Show a device.")
-	public static class ShowCommand extends CliCommand {
+	public static class ShowCommand extends DirectorCommand {
 		@Parameters(paramLabel = "<device-id>", description = "The device.")
 		Id deviceId;
 
@@ -86,7 +86,7 @@ public class DeviceCommand extends CliGroup {
 	@Command(name = "add", description = {"Register a device to a user.",
 			"No signature from the device is involved: you vouch for it. A user registers devices themselves with "
 					+ "'boson-cli device add'."})
-	public static class AddCommand extends CliCommand {
+	public static class AddCommand extends DirectorCommand {
 		@Parameters(index = "0", paramLabel = "<user-id>", description = "The user the device belongs to.")
 		Id userId;
 
@@ -125,7 +125,7 @@ public class DeviceCommand extends CliGroup {
 	}
 
 	@Command(name = "remove", description = "Remove a device. It can no longer act for its user.")
-	public static class RemoveCommand extends CliCommand {
+	public static class RemoveCommand extends DirectorCommand {
 		@Parameters(paramLabel = "<device-id>", description = "The device.")
 		Id deviceId;
 

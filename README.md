@@ -6,9 +6,15 @@ Command line tools for [Boson](https://github.com/bosonnetwork):
 |---|---|
 | `boson-cli` | Users and developers: register with a super node, manage your profile, passphrase and devices, and work with Boson keys offline |
 | `boson-director-cli` | Operators: administer a super node through its Director's admin API - users, devices, plans and features, subscriptions, the blacklist and federation |
+| `boson-node` | Node operators and developers: run a DHT node, write and check its configuration, and explore the network from an interactive shell |
 
-Both are built on the Java clients in `boson-director-client`; they hold no protocol code of their own.
-They replace the earlier Rust tools of the same names.
+They hold no protocol code of their own: the first two are built on the clients in
+`boson-director-client`, and `boson-node` on `boson-dht`. What they share - the root command wiring,
+output, terminal, exit codes and error reporting - is in `boson-cli-common`, so every tool takes the
+same global options and reports failures the same way.
+
+`boson-cli` and `boson-director-cli` replace the earlier Rust tools of the same names. `boson-node`
+replaces `core/dht-runner`, which stays in place until the distribution is switched over to it.
 
 ## Build
 
@@ -110,6 +116,26 @@ config ... | identity ...
 
 List commands show one page (`--page`, `--page-size`) or everything (`--all`), and say how to get the
 next page.
+
+`boson-node`:
+
+```
+run                      Run a node in the foreground
+shell                    Explore the DHT from an interactive shell
+setup                    Configure a packaged bootstrap node
+cache                    Show the routing table a node saved, without starting it
+id                       Show the id of a configured node
+config init | show | check
+```
+
+Inside the shell: `id`, `bootstrap`, `find node|value|peer`, `store value`, `announce peer`,
+`routing` (the table now) and `cache` (the saved one), `storage values|value|peers|peer`, `keygen`,
+`stop`, and `exit`.
+
+`boson-node` is configured by a node's own `node.yaml`, not by the `boson.yaml` above: without
+`--config` it uses the first of `./node.yaml`, the user's `boson/node.yaml` and the system's
+`boson/node.yaml` that exists. `config init` writes one with a new identity, and `config check` reads
+it the way a node does and says what is wrong with it.
 
 ## Output, errors and scripting
 

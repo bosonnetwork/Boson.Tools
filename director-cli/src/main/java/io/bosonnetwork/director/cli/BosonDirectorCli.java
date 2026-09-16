@@ -25,11 +25,12 @@ package io.bosonnetwork.director.cli;
 import picocli.CommandLine.Command;
 import picocli.CommandLine.HelpCommand;
 
-import io.bosonnetwork.cli.common.ConfigCommand;
-import io.bosonnetwork.cli.common.IdentityCommand;
-import io.bosonnetwork.cli.support.CliApp;
-import io.bosonnetwork.cli.support.CliEnvironment;
-import io.bosonnetwork.cli.support.ToolSpec;
+import io.bosonnetwork.cli.director.ConfigCommand;
+import io.bosonnetwork.cli.director.IdentityCommand;
+import io.bosonnetwork.cli.common.CliApp;
+import io.bosonnetwork.cli.common.CliEnvironment;
+import io.bosonnetwork.cli.director.DirectorApp;
+import io.bosonnetwork.cli.director.ToolSpec;
 import io.bosonnetwork.director.cli.commands.BlacklistCommand;
 import io.bosonnetwork.director.cli.commands.DeviceCommand;
 import io.bosonnetwork.director.cli.commands.FeatureCommand;
@@ -53,7 +54,7 @@ import io.bosonnetwork.director.cli.commands.UserCommand;
 		subcommands = {UserCommand.class, DeviceCommand.class, PlanCommand.class, FeatureCommand.class,
 				SubscriptionCommand.class, BlacklistCommand.class, FederationCommand.class, NodeCommand.class,
 				ConfigCommand.class, IdentityCommand.class, HelpCommand.class})
-public class BosonDirectorCli extends CliApp {
+public class BosonDirectorCli extends DirectorApp {
 	/**
 	 * Creates the tool.
 	 *

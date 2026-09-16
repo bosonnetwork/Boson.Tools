@@ -29,11 +29,12 @@ import io.bosonnetwork.cli.commands.DeviceCommand;
 import io.bosonnetwork.cli.commands.NodeCommand;
 import io.bosonnetwork.cli.commands.UserCommand;
 import io.bosonnetwork.cli.commands.UtilCommand;
-import io.bosonnetwork.cli.common.ConfigCommand;
-import io.bosonnetwork.cli.common.IdentityCommand;
-import io.bosonnetwork.cli.support.CliApp;
-import io.bosonnetwork.cli.support.CliEnvironment;
-import io.bosonnetwork.cli.support.ToolSpec;
+import io.bosonnetwork.cli.director.ConfigCommand;
+import io.bosonnetwork.cli.director.IdentityCommand;
+import io.bosonnetwork.cli.common.CliApp;
+import io.bosonnetwork.cli.director.DirectorApp;
+import io.bosonnetwork.cli.common.CliEnvironment;
+import io.bosonnetwork.cli.director.ToolSpec;
 
 /**
  * {@code boson-cli}: the Boson command line client. It acts as one user of a super node - registering
@@ -50,7 +51,7 @@ import io.bosonnetwork.cli.support.ToolSpec;
 				"  boson-cli user register --name Alice"},
 		subcommands = {UserCommand.class, DeviceCommand.class, NodeCommand.class, ConfigCommand.class,
 				IdentityCommand.class, UtilCommand.class, HelpCommand.class})
-public class BosonCli extends CliApp {
+public class BosonCli extends DirectorApp {
 	/**
 	 * Creates the tool.
 	 *

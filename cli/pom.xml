@@ -76,6 +76,12 @@
     <dependencies>
         <dependency>
             <groupId>io.bosonnetwork</groupId>
+            <artifactId>boson-cli-common</artifactId>
+            <version>3.1.2-SNAPSHOT</version>
+        </dependency>
+
+        <dependency>
+            <groupId>io.bosonnetwork</groupId>
             <artifactId>boson-api</artifactId>
         </dependency>
 
@@ -121,6 +127,13 @@
         <dependency>
             <groupId>org.junit.jupiter</groupId>
             <artifactId>junit-jupiter</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>io.bosonnetwork</groupId>
+            <artifactId>boson-cli-common</artifactId>
+            <version>3.1.2-SNAPSHOT</version>
+            <type>test-jar</type>
             <scope>test</scope>
         </dependency>
     </dependencies>

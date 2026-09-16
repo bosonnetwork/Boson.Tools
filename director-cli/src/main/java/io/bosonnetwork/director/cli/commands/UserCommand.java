@@ -33,14 +33,14 @@ import picocli.CommandLine.Option;
 import picocli.CommandLine.Parameters;
 
 import io.bosonnetwork.Id;
-import io.bosonnetwork.cli.support.CliCommand;
-import io.bosonnetwork.cli.support.CliContext;
-import io.bosonnetwork.cli.support.CliException;
-import io.bosonnetwork.cli.support.CliGroup;
-import io.bosonnetwork.cli.support.ExitCode;
-import io.bosonnetwork.cli.support.Listing;
-import io.bosonnetwork.cli.support.PageOptions;
-import io.bosonnetwork.cli.support.Views;
+import io.bosonnetwork.cli.director.DirectorCommand;
+import io.bosonnetwork.cli.director.CliContext;
+import io.bosonnetwork.cli.common.CliException;
+import io.bosonnetwork.cli.common.CliGroup;
+import io.bosonnetwork.cli.common.ExitCode;
+import io.bosonnetwork.cli.common.Listing;
+import io.bosonnetwork.cli.common.PageOptions;
+import io.bosonnetwork.cli.director.Views;
 import io.bosonnetwork.director.cli.AdminViews;
 import io.bosonnetwork.director.cli.Arguments;
 import io.bosonnetwork.director.client.DirectorAdmin;
@@ -62,7 +62,7 @@ import io.bosonnetwork.web.PaginatedResult;
 public class UserCommand extends CliGroup {
 
 	@Command(name = "list", description = "List the users.")
-	public static class ListCommand extends CliCommand {
+	public static class ListCommand extends DirectorCommand {
 		@Mixin
 		PageOptions paging;
 
@@ -74,14 +74,14 @@ public class UserCommand extends CliGroup {
 		protected void run() throws Exception {
 			DirectorAdmin admin = context().directorAdmin();
 			Sort[] keys = sort.toArray(new Sort[0]);
-			PaginatedResult<Profile> page = paging.fetch(context(), (p, size) -> admin.listUsers(p, size, keys));
+			PaginatedResult<Profile> page = paging.fetch(this, (p, size) -> admin.listUsers(p, size, keys));
 			Listing.page(output(), page, paging, "users", AdminViews.USER_HEADERS, AdminViews::userRow,
 					Views::profileJson, "The node has no users.");
 		}
 	}
 
 	@Command(name = "show", description = "Show a user's account.")
-	public static class ShowCommand extends CliCommand {
+	public static class ShowCommand extends DirectorCommand {
 		@Parameters(paramLabel = "<user-id>", description = "The user.")
 		Id userId;
 
@@ -98,7 +98,7 @@ public class UserCommand extends CliGroup {
 	@Command(name = "add", description = {"Create a user account.",
 			"The Director requires an account created this way to have a passphrase, which you are asked for. "
 					+ "Give it to the user, who can change it with 'boson-cli user passphrase change'."})
-	public static class AddCommand extends CliCommand {
+	public static class AddCommand extends DirectorCommand {
 		@Parameters(paramLabel = "<user-id>", description = "The user's id: the public key of the user's identity.")
 		Id userId;
 
@@ -146,7 +146,7 @@ public class UserCommand extends CliGroup {
 	@Command(name = "update", description = {"Change a user's account.",
 			"Only the fields given change. An empty value clears a field, as in --bio \"\". To change the administrator "
 					+ "role, use grant-admin and revoke-admin."})
-	public static class UpdateCommand extends CliCommand {
+	public static class UpdateCommand extends DirectorCommand {
 		@Parameters(paramLabel = "<user-id>", description = "The user.")
 		Id userId;
 
@@ -213,7 +213,7 @@ public class UserCommand extends CliGroup {
 	}
 
 	@Command(name = "remove", description = "Remove a user's account.")
-	public static class RemoveCommand extends CliCommand {
+	public static class RemoveCommand extends DirectorCommand {
 		@Parameters(paramLabel = "<user-id>", description = "The user.")
 		Id userId;
 
@@ -240,7 +240,7 @@ public class UserCommand extends CliGroup {
 	}
 
 	@Command(name = "grant-admin", description = "Make a user an administrator, with full control of the node.")
-	public static class GrantAdminCommand extends CliCommand {
+	public static class GrantAdminCommand extends DirectorCommand {
 		@Parameters(paramLabel = "<user-id>", description = "The user.")
 		Id userId;
 
@@ -261,7 +261,7 @@ public class UserCommand extends CliGroup {
 	}
 
 	@Command(name = "revoke-admin", description = "Take the administrator role from a user.")
-	public static class RevokeAdminCommand extends CliCommand {
+	public static class RevokeAdminCommand extends DirectorCommand {
 		@Parameters(paramLabel = "<user-id>", description = "The user.")
 		Id userId;
 

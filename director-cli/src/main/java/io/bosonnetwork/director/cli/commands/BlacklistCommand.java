@@ -34,12 +34,12 @@ import picocli.CommandLine.Mixin;
 import picocli.CommandLine.Option;
 import picocli.CommandLine.Parameters;
 
-import io.bosonnetwork.cli.support.CliCommand;
-import io.bosonnetwork.cli.support.CliException;
-import io.bosonnetwork.cli.support.CliGroup;
-import io.bosonnetwork.cli.support.ExitCode;
-import io.bosonnetwork.cli.support.Listing;
-import io.bosonnetwork.cli.support.PageOptions;
+import io.bosonnetwork.cli.director.DirectorCommand;
+import io.bosonnetwork.cli.common.CliException;
+import io.bosonnetwork.cli.common.CliGroup;
+import io.bosonnetwork.cli.common.ExitCode;
+import io.bosonnetwork.cli.common.Listing;
+import io.bosonnetwork.cli.common.PageOptions;
 import io.bosonnetwork.director.cli.AdminViews;
 import io.bosonnetwork.director.cli.Arguments;
 import io.bosonnetwork.director.cli.Arguments.BlacklistTarget;
@@ -65,21 +65,21 @@ public class BlacklistCommand extends CliGroup {
 			"Read the value as a host, even if it looks like a node id.";
 
 	@Command(name = "list", description = "List the blacklist.")
-	public static class ListCommand extends CliCommand {
+	public static class ListCommand extends DirectorCommand {
 		@Mixin
 		PageOptions paging;
 
 		@Override
 		protected void run() throws Exception {
 			DirectorAdmin admin = context().directorAdmin();
-			PaginatedResult<BlacklistedNode> page = paging.fetch(context(), admin::listBlacklistedNodes);
+			PaginatedResult<BlacklistedNode> page = paging.fetch(this, admin::listBlacklistedNodes);
 			Listing.page(output(), page, paging, "entries", AdminViews.BLACKLIST_HEADERS, AdminViews::blacklistRow,
 					AdminViews::blacklistJson, "The blacklist is empty.");
 		}
 	}
 
 	@Command(name = "show", description = "Show a blacklist entry.")
-	public static class ShowCommand extends CliCommand {
+	public static class ShowCommand extends DirectorCommand {
 		@Parameters(paramLabel = "<entry>", description = ENTRY_DESCRIPTION)
 		String entry;
 
@@ -105,7 +105,7 @@ public class BlacklistCommand extends CliGroup {
 	}
 
 	@Command(name = "add", description = "Add a node or a host to the blacklist.")
-	public static class AddCommand extends CliCommand {
+	public static class AddCommand extends DirectorCommand {
 		@Parameters(paramLabel = "<node-or-host>", description = "The node's id, or the host's name or address.")
 		String value;
 
@@ -139,7 +139,7 @@ public class BlacklistCommand extends CliGroup {
 	}
 
 	@Command(name = "update", description = "Change a blacklist entry's reason, or whether it is automatic.")
-	public static class UpdateCommand extends CliCommand {
+	public static class UpdateCommand extends DirectorCommand {
 		@Parameters(paramLabel = "<entry>", description = ENTRY_DESCRIPTION)
 		String entry;
 
@@ -196,7 +196,7 @@ public class BlacklistCommand extends CliGroup {
 	}
 
 	@Command(name = "remove", description = "Remove a node or a host from the blacklist.")
-	public static class RemoveCommand extends CliCommand {
+	public static class RemoveCommand extends DirectorCommand {
 		@Parameters(paramLabel = "<entry>", description = ENTRY_DESCRIPTION)
 		String entry;
 

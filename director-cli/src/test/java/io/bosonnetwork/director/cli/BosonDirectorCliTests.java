@@ -48,9 +48,9 @@ import picocli.CommandLine;
 import picocli.CommandLine.TypeConversionException;
 
 import io.bosonnetwork.Id;
-import io.bosonnetwork.cli.support.CliEnvironment;
-import io.bosonnetwork.cli.testing.CliRunner;
-import io.bosonnetwork.cli.testing.CliRunner.Result;
+import io.bosonnetwork.cli.common.CliEnvironment;
+import io.bosonnetwork.cli.common.testing.CliRunner;
+import io.bosonnetwork.cli.common.testing.CliRunner.Result;
 import io.bosonnetwork.cli.testing.StubDirector;
 import io.bosonnetwork.crypto.Signature;
 import io.bosonnetwork.utils.Base58;

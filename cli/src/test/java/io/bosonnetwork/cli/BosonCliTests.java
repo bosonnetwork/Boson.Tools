@@ -45,10 +45,10 @@ import org.junit.jupiter.api.io.TempDir;
 import picocli.CommandLine;
 
 import io.bosonnetwork.Id;
-import io.bosonnetwork.cli.support.CliEnvironment;
-import io.bosonnetwork.cli.support.IdentityFile;
-import io.bosonnetwork.cli.testing.CliRunner;
-import io.bosonnetwork.cli.testing.CliRunner.Result;
+import io.bosonnetwork.cli.common.CliEnvironment;
+import io.bosonnetwork.cli.common.IdentityFile;
+import io.bosonnetwork.cli.common.testing.CliRunner;
+import io.bosonnetwork.cli.common.testing.CliRunner.Result;
 import io.bosonnetwork.cli.testing.StubDirector;
 import io.bosonnetwork.crypto.Random;
 import io.bosonnetwork.crypto.Signature;

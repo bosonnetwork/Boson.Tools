@@ -35,12 +35,12 @@ import picocli.CommandLine.Option;
 import picocli.CommandLine.Parameters;
 
 import io.bosonnetwork.Id;
-import io.bosonnetwork.cli.support.CliCommand;
-import io.bosonnetwork.cli.support.CliException;
-import io.bosonnetwork.cli.support.CliGroup;
-import io.bosonnetwork.cli.support.ExitCode;
-import io.bosonnetwork.cli.support.Listing;
-import io.bosonnetwork.cli.support.PageOptions;
+import io.bosonnetwork.cli.director.DirectorCommand;
+import io.bosonnetwork.cli.common.CliException;
+import io.bosonnetwork.cli.common.CliGroup;
+import io.bosonnetwork.cli.common.ExitCode;
+import io.bosonnetwork.cli.common.Listing;
+import io.bosonnetwork.cli.common.PageOptions;
 import io.bosonnetwork.director.cli.AdminViews;
 import io.bosonnetwork.director.cli.Arguments;
 import io.bosonnetwork.director.client.DirectorAdmin;
@@ -72,21 +72,21 @@ public class FederationCommand extends CliGroup {
 					NodeGroup.RemoveCommand.class})
 	public static class NodeGroup extends CliGroup {
 		@Command(name = "list", description = "List the federated nodes.")
-		public static class ListCommand extends CliCommand {
+		public static class ListCommand extends DirectorCommand {
 			@Mixin
 			PageOptions paging;
 
 			@Override
 			protected void run() throws Exception {
 				DirectorAdmin admin = context().directorAdmin();
-				PaginatedResult<FederatedNode> page = paging.fetch(context(), admin::listFederatedNodes);
+				PaginatedResult<FederatedNode> page = paging.fetch(this, admin::listFederatedNodes);
 				Listing.page(output(), page, paging, "nodes", AdminViews.FEDERATED_NODE_HEADERS, AdminViews::federatedNodeRow,
 						AdminViews::federatedNodeJson, "This node has not federated with any node.");
 			}
 		}
 
 		@Command(name = "show", description = "Show a federated node.")
-		public static class ShowCommand extends CliCommand {
+		public static class ShowCommand extends DirectorCommand {
 			@Parameters(paramLabel = "<node-id>", description = "The node.")
 			Id nodeId;
 
@@ -102,7 +102,7 @@ public class FederationCommand extends CliGroup {
 		}
 
 		@Command(name = "update", description = "Suspend or resume the federation with a node, or change what this node records about it.")
-		public static class UpdateCommand extends CliCommand {
+		public static class UpdateCommand extends DirectorCommand {
 			@Parameters(paramLabel = "<node-id>", description = "The node.")
 			Id nodeId;
 
@@ -156,7 +156,7 @@ public class FederationCommand extends CliGroup {
 		}
 
 		@Command(name = "remove", description = "Remove a node from this node's federation.")
-		public static class RemoveCommand extends CliCommand {
+		public static class RemoveCommand extends DirectorCommand {
 			@Parameters(paramLabel = "<node-id>", description = "The node.")
 			Id nodeId;
 
@@ -186,7 +186,7 @@ public class FederationCommand extends CliGroup {
 			subcommands = {ServiceGroup.ListCommand.class})
 	public static class ServiceGroup extends CliGroup {
 		@Command(name = "list", description = "List the services a federated node shares with this node.")
-		public static class ListCommand extends CliCommand {
+		public static class ListCommand extends DirectorCommand {
 			@Parameters(paramLabel = "<node-id>", description = "The node.")
 			Id nodeId;
 
@@ -203,7 +203,7 @@ public class FederationCommand extends CliGroup {
 			subcommands = {ProposalGroup.ListCommand.class, ProposalGroup.ShowCommand.class, ProposalGroup.RemoveCommand.class})
 	public static class ProposalGroup extends CliGroup {
 		@Command(name = "list", description = "List the federation proposals.")
-		public static class ListCommand extends CliCommand {
+		public static class ListCommand extends DirectorCommand {
 			@Mixin
 			PageOptions paging;
 
@@ -235,7 +235,7 @@ public class FederationCommand extends CliGroup {
 				Sort[] keys = sort.toArray(new Sort[0]);
 
 				DirectorAdmin admin = context().directorAdmin();
-				PaginatedResult<FederationProposal> page = paging.fetch(context(),
+				PaginatedResult<FederationProposal> page = paging.fetch(this,
 						(p, size) -> admin.listFederationProposals(filter, p, size, keys));
 				Listing.page(output(), page, paging, "proposals", AdminViews.PROPOSAL_HEADERS, AdminViews::proposalRow,
 						AdminViews::proposalJson, "No proposals match.");
@@ -243,7 +243,7 @@ public class FederationCommand extends CliGroup {
 		}
 
 		@Command(name = "show", description = "Show a federation proposal.")
-		public static class ShowCommand extends CliCommand {
+		public static class ShowCommand extends DirectorCommand {
 			@Parameters(paramLabel = "<proposal-id>", description = "The proposal, as 'federation proposal list' shows it.")
 			long proposalId;
 
@@ -259,7 +259,7 @@ public class FederationCommand extends CliGroup {
 		}
 
 		@Command(name = "remove", description = "Remove a federation proposal from the record. A federation it established is not affected.")
-		public static class RemoveCommand extends CliCommand {
+		public static class RemoveCommand extends DirectorCommand {
 			@Parameters(paramLabel = "<proposal-id>", description = "The proposal, as 'federation proposal list' shows it.")
 			long proposalId;
 
@@ -288,7 +288,7 @@ public class FederationCommand extends CliGroup {
 	@Command(name = "propose", description = {"Propose federation to another super node.",
 			"This node looks the other one up on the DHT, checks it, sends it the proposal, and waits for its answer. "
 					+ "Every proposal is recorded; see 'federation proposal list'."})
-	public static class ProposeCommand extends CliCommand {
+	public static class ProposeCommand extends DirectorCommand {
 		// What the Director answers when it cannot find or validate the node proposed to.
 		private static final int UNPROCESSABLE = 422;
 

@@ -32,12 +32,12 @@ import picocli.CommandLine.Option;
 import picocli.CommandLine.Parameters;
 
 import io.bosonnetwork.Id;
-import io.bosonnetwork.cli.support.CliCommand;
-import io.bosonnetwork.cli.support.CliException;
-import io.bosonnetwork.cli.support.CliGroup;
-import io.bosonnetwork.cli.support.ExitCode;
-import io.bosonnetwork.cli.support.IdentityFile;
-import io.bosonnetwork.cli.support.Keys;
+import io.bosonnetwork.cli.director.DirectorCommand;
+import io.bosonnetwork.cli.common.CliException;
+import io.bosonnetwork.cli.common.CliGroup;
+import io.bosonnetwork.cli.common.ExitCode;
+import io.bosonnetwork.cli.common.IdentityFile;
+import io.bosonnetwork.cli.common.Keys;
 import io.bosonnetwork.crypto.CryptoBox;
 import io.bosonnetwork.crypto.Signature;
 import io.bosonnetwork.utils.Base58;
@@ -56,7 +56,7 @@ public class UtilCommand extends CliGroup {
 	@Command(name = "keygen", description = {"Generate a new key pair.",
 			"Prints the Ed25519 signature key pair, whose public key is an id, and the Curve25519 encryption key pair "
 					+ "derived from it. With --output, writes the private key to a new identity file instead, and prints the id."})
-	public static class KeygenCommand extends CliCommand {
+	public static class KeygenCommand extends DirectorCommand {
 		@Option(names = "--hex", description = "Print keys as hex rather than Base58.")
 		boolean hex;
 
@@ -116,7 +116,7 @@ public class UtilCommand extends CliGroup {
 
 	@Command(name = "check-key", description = {"Check that a key is valid.",
 			"Exits with 0 for a valid key, and 1 for an invalid one."})
-	public static class CheckKeyCommand extends CliCommand {
+	public static class CheckKeyCommand extends DirectorCommand {
 		@Parameters(paramLabel = "<key>", arity = "0..1", description = "The key: Base58, or hex with 0x. " + KEY_PROMPT_HINT)
 		String key;
 
@@ -187,7 +187,7 @@ public class UtilCommand extends CliGroup {
 
 	@Command(name = "public-key", description = {"Print the public key of a private key.",
 			"The public key of an Ed25519 private key is also its id: for instance, a node's id from the privateKey in its node.yaml."})
-	public static class PublicKeyCommand extends CliCommand {
+	public static class PublicKeyCommand extends DirectorCommand {
 		@Parameters(paramLabel = "<private-key>", arity = "0..1",
 				description = "The private key: Base58, or hex with 0x. " + KEY_PROMPT_HINT)
 		String key;
@@ -225,7 +225,7 @@ public class UtilCommand extends CliGroup {
 			"Proves that you hold the identity, to link it to an OAuth sign-in: the Director issues the nonce, and takes "
 					+ "back the publicKey and signature printed. Only 32-byte nonces are signed, so that this never signs "
 					+ "anything else."})
-	public static class SignCommand extends CliCommand {
+	public static class SignCommand extends DirectorCommand {
 		private static final int NONCE_BYTES = 32;
 
 		@Parameters(paramLabel = "<nonce>", description = "The nonce: Base58, or hex with 0x.")
@@ -259,7 +259,7 @@ public class UtilCommand extends CliGroup {
 	}
 
 	@Command(name = "hex-to-base58", description = "Convert a hex value to Base58.")
-	public static class HexToBase58Command extends CliCommand {
+	public static class HexToBase58Command extends DirectorCommand {
 		@Parameters(paramLabel = "<hex>", description = "The value, with or without 0x.")
 		String value;
 
@@ -287,7 +287,7 @@ public class UtilCommand extends CliGroup {
 	}
 
 	@Command(name = "base58-to-hex", description = "Convert a Base58 value to hex, with 0x.")
-	public static class Base58ToHexCommand extends CliCommand {
+	public static class Base58ToHexCommand extends DirectorCommand {
 		@Parameters(paramLabel = "<base58>", description = "The value.")
 		String value;
 

@@ -26,7 +26,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
-import io.bosonnetwork.cli.support.Formats;
+import io.bosonnetwork.cli.common.Formats;
 import io.bosonnetwork.director.client.BlacklistedNode;
 import io.bosonnetwork.director.client.Feature;
 import io.bosonnetwork.director.client.FederatedNode;

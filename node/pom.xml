@@ -1,0 +1,206 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
+    <parent>
+        <groupId>io.bosonnetwork</groupId>
+        <artifactId>boson-parent</artifactId>
+        <version>3.1.2-SNAPSHOT</version>
+        <relativePath/>
+    </parent>
+
+    <groupId>io.bosonnetwork</groupId>
+    <artifactId>boson-node</artifactId>
+    <version>3.1.2-SNAPSHOT</version>
+    <packaging>jar</packaging>
+
+    <name>Boson Node CLI</name>
+    <description>
+        The command line tool of a Boson DHT node: runs a node, configures one, and explores the
+        network with an interactive shell and offline inspectors.
+    </description>
+    <url>https://github.com/bosonnetwork/Boson.Tools</url>
+
+    <licenses>
+        <license>
+            <name>MIT License</name>
+            <url>https://github.com/bosonnetwork/Boson.Tools/blob/master/LICENSE</url>
+            <distribution>repo</distribution>
+        </license>
+    </licenses>
+
+    <developers>
+        <developer>
+            <id>boson-network-dev</id>
+            <name>Boson Network</name>
+            <email>support@bosonnetwork.io</email>
+            <organization>BosonNetwork</organization>
+            <organizationUrl>https://github.com/bosonnetwork</organizationUrl>
+            <roles>
+                <role>architect</role>
+                <role>developer</role>
+            </roles>
+            <properties>
+                <picUrl>https://avatars.githubusercontent.com/u/152134507</picUrl>
+            </properties>
+        </developer>
+    </developers>
+
+    <scm>
+        <connection>scm:git:git@github.com:bosonnetwork/Boson.Tools.git</connection>
+        <developerConnection>scm:git:git@github.com:bosonnetwork/Boson.Tools.git</developerConnection>
+        <url>git@github.com:bosonnetwork/Boson.Tools.git</url>
+    </scm>
+
+    <properties>
+        <!-- An application: the distribution builds it from the reactor, so it has no reason to be on
+             Maven Central. -->
+        <central.skipPublishing>true</central.skipPublishing>
+    </properties>
+
+    <dependencyManagement>
+        <dependencies>
+            <dependency>
+                <groupId>io.bosonnetwork</groupId>
+                <artifactId>boson-dependencies</artifactId>
+                <version>3.1.2-SNAPSHOT</version>
+                <type>pom</type>
+                <scope>import</scope>
+            </dependency>
+        </dependencies>
+    </dependencyManagement>
+
+    <dependencies>
+        <!-- The root command wiring, output, terminal, keys and error reporting. -->
+        <dependency>
+            <groupId>io.bosonnetwork</groupId>
+            <artifactId>boson-cli-common</artifactId>
+            <version>3.1.2-SNAPSHOT</version>
+        </dependency>
+
+        <dependency>
+            <groupId>io.bosonnetwork</groupId>
+            <artifactId>boson-dht</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>info.picocli</groupId>
+            <artifactId>picocli</artifactId>
+        </dependency>
+
+        <!-- Test dependencies -->
+        <dependency>
+            <groupId>org.junit.jupiter</groupId>
+            <artifactId>junit-jupiter</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>io.bosonnetwork</groupId>
+            <artifactId>boson-cli-common</artifactId>
+            <version>3.1.2-SNAPSHOT</version>
+            <type>test-jar</type>
+            <scope>test</scope>
+        </dependency>
+    </dependencies>
+
+    <build>
+        <plugins>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-jar-plugin</artifactId>
+            </plugin>
+
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-surefire-plugin</artifactId>
+            </plugin>
+
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-clean-plugin</artifactId>
+                <executions>
+                    <!-- copy-dependencies below only adds, it never prunes: reset the lib directory so it
+                         holds exactly the current runtime dependencies. -->
+                    <execution>
+                        <id>reset-lib</id>
+                        <phase>prepare-package</phase>
+                        <goals>
+                            <goal>clean</goal>
+                        </goals>
+                        <configuration>
+                            <excludeDefaultDirectories>true</excludeDefaultDirectories>
+                            <filesets>
+                                <fileset>
+                                    <directory>${project.build.directory}/dist/lib</directory>
+                                </fileset>
+                            </filesets>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+
+            <!-- target/dist: bin/boson-node and lib/, runnable as it is. -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-dependency-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <?m2e ignore?>
+                        <id>copy-dependencies</id>
+                        <phase>package</phase>
+                        <goals>
+                            <goal>copy-dependencies</goal>
+                        </goals>
+                        <configuration>
+                            <outputDirectory>${project.build.directory}/dist/lib</outputDirectory>
+                            <includeScope>runtime</includeScope>
+                        </configuration>
+                    </execution>
+                    <execution>
+                        <id>copy-self</id>
+                        <phase>package</phase>
+                        <goals>
+                            <goal>copy</goal>
+                        </goals>
+                        <configuration>
+                            <artifactItems>
+                                <artifactItem>
+                                    <groupId>${project.groupId}</groupId>
+                                    <artifactId>${project.artifactId}</artifactId>
+                                    <version>${project.version}</version>
+                                    <type>${project.packaging}</type>
+                                    <outputDirectory>${project.build.directory}/dist/lib</outputDirectory>
+                                    <destFileName>${project.build.finalName}.jar</destFileName>
+                                </artifactItem>
+                            </artifactItems>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-resources-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <id>copy-launcher</id>
+                        <phase>package</phase>
+                        <goals>
+                            <goal>copy-resources</goal>
+                        </goals>
+                        <configuration>
+                            <outputDirectory>${project.build.directory}/dist/bin</outputDirectory>
+                            <resources>
+                                <resource>
+                                    <directory>src/main/scripts</directory>
+                                </resource>
+                            </resources>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+        </plugins>
+    </build>
+</project>

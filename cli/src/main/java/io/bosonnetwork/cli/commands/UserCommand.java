@@ -37,11 +37,11 @@ import picocli.CommandLine.Command;
 import picocli.CommandLine.Option;
 import picocli.CommandLine.Parameters;
 
-import io.bosonnetwork.cli.support.CliCommand;
-import io.bosonnetwork.cli.support.CliException;
-import io.bosonnetwork.cli.support.CliGroup;
-import io.bosonnetwork.cli.support.ExitCode;
-import io.bosonnetwork.cli.support.Views;
+import io.bosonnetwork.cli.director.DirectorCommand;
+import io.bosonnetwork.cli.common.CliException;
+import io.bosonnetwork.cli.common.CliGroup;
+import io.bosonnetwork.cli.common.ExitCode;
+import io.bosonnetwork.cli.director.Views;
 import io.bosonnetwork.crypto.Signature;
 import io.bosonnetwork.director.client.DirectorClient;
 import io.bosonnetwork.director.client.Profile;
@@ -62,7 +62,7 @@ public class UserCommand extends CliGroup {
 	@Command(name = "register", description = {"Register your user with the super node.",
 			"The registration is proven with proof-of-work, which takes a few seconds. With --device-key, a device is "
 					+ "registered along with the user."})
-	public static class RegisterCommand extends CliCommand {
+	public static class RegisterCommand extends DirectorCommand {
 		@Option(names = "--name", paramLabel = "<name>", description = "Your display name.")
 		String name;
 
@@ -133,7 +133,7 @@ public class UserCommand extends CliGroup {
 	}
 
 	@Command(name = "show", description = "Show your profile.")
-	public static class ShowCommand extends CliCommand {
+	public static class ShowCommand extends DirectorCommand {
 		@Override
 		protected void run() throws Exception {
 			Profile profile = await(context().directorClient().getProfile());
@@ -146,7 +146,7 @@ public class UserCommand extends CliGroup {
 
 	@Command(name = "update", description = {"Change your profile.",
 			"Only the fields given change. An empty value clears a field, as in --bio \"\"."})
-	public static class UpdateCommand extends CliCommand {
+	public static class UpdateCommand extends DirectorCommand {
 		@Option(names = "--name", paramLabel = "<name>", description = "Your display name.")
 		String name;
 
@@ -194,7 +194,7 @@ public class UserCommand extends CliGroup {
 			subcommands = {AvatarCommand.GetCommand.class, AvatarCommand.SetCommand.class})
 	public static class AvatarCommand extends CliGroup {
 		@Command(name = "get", description = "Save your avatar to a file.")
-		public static class GetCommand extends CliCommand {
+		public static class GetCommand extends DirectorCommand {
 			@Option(names = {"-o", "--output"}, paramLabel = "<file>", required = true,
 					description = "The file to save the image to.")
 			Path file;
@@ -242,7 +242,7 @@ public class UserCommand extends CliGroup {
 
 		@Command(name = "set", description = {"Upload an image as your avatar.",
 				"PNG or JPEG, within the size limit the node sets."})
-		public static class SetCommand extends CliCommand {
+		public static class SetCommand extends DirectorCommand {
 			@Parameters(paramLabel = "<file>", description = "The image: a .png, .jpg or .jpeg file.")
 			Path file;
 
@@ -273,7 +273,7 @@ public class UserCommand extends CliGroup {
 					PassphraseCommand.ClearCommand.class})
 	public static class PassphraseCommand extends CliGroup {
 		@Command(name = "set", description = "Set a passphrase on an account that has none. You are asked for it.")
-		public static class SetCommand extends CliCommand {
+		public static class SetCommand extends DirectorCommand {
 			@Override
 			protected void run() throws Exception {
 				DirectorClient client = context().directorClient();
@@ -289,7 +289,7 @@ public class UserCommand extends CliGroup {
 		}
 
 		@Command(name = "change", description = "Change the account passphrase. You are asked for the current one and the new one.")
-		public static class ChangeCommand extends CliCommand {
+		public static class ChangeCommand extends DirectorCommand {
 			@Override
 			protected void run() throws Exception {
 				DirectorClient client = context().directorClient();
@@ -305,7 +305,7 @@ public class UserCommand extends CliGroup {
 		}
 
 		@Command(name = "clear", description = "Remove the passphrase from the account. You are asked for it.")
-		public static class ClearCommand extends CliCommand {
+		public static class ClearCommand extends DirectorCommand {
 			@Option(names = {"-y", "--yes"}, description = "Do not ask for confirmation.")
 			boolean yes;
 

@@ -32,14 +32,14 @@ import picocli.CommandLine.Option;
 import picocli.CommandLine.Parameters;
 
 import io.bosonnetwork.Id;
-import io.bosonnetwork.cli.support.CliCommand;
-import io.bosonnetwork.cli.support.CliContext;
-import io.bosonnetwork.cli.support.CliException;
-import io.bosonnetwork.cli.support.CliGroup;
-import io.bosonnetwork.cli.support.ExitCode;
-import io.bosonnetwork.cli.support.Formats;
-import io.bosonnetwork.cli.support.Listing;
-import io.bosonnetwork.cli.support.PageOptions;
+import io.bosonnetwork.cli.director.DirectorCommand;
+import io.bosonnetwork.cli.director.CliContext;
+import io.bosonnetwork.cli.common.CliException;
+import io.bosonnetwork.cli.common.CliGroup;
+import io.bosonnetwork.cli.common.ExitCode;
+import io.bosonnetwork.cli.common.Formats;
+import io.bosonnetwork.cli.common.Listing;
+import io.bosonnetwork.cli.common.PageOptions;
 import io.bosonnetwork.director.cli.AdminViews;
 import io.bosonnetwork.director.cli.Arguments;
 import io.bosonnetwork.director.cli.Arguments.PlanRef;
@@ -62,7 +62,7 @@ import io.bosonnetwork.web.PaginatedResult;
 public class SubscriptionCommand extends CliGroup {
 
 	@Command(name = "list", description = "List a user's subscriptions, past and present.")
-	public static class ListCommand extends CliCommand {
+	public static class ListCommand extends DirectorCommand {
 		@Parameters(paramLabel = "<user-id>", description = "The user.")
 		Id userId;
 
@@ -74,7 +74,7 @@ public class SubscriptionCommand extends CliGroup {
 			DirectorAdmin admin = context().directorAdmin();
 			PaginatedResult<Subscription> page;
 			try {
-				page = paging.fetch(context(), (p, size) -> admin.listSubscriptions(userId, p, size));
+				page = paging.fetch(this, (p, size) -> admin.listSubscriptions(userId, p, size));
 			} catch (NotFoundException e) {
 				throw UserCommand.noSuchUser(userId);
 			}
@@ -84,7 +84,7 @@ public class SubscriptionCommand extends CliGroup {
 	}
 
 	@Command(name = "show", description = "Show a subscription.")
-	public static class ShowCommand extends CliCommand {
+	public static class ShowCommand extends DirectorCommand {
 		@Parameters(paramLabel = "<subscription-id>", description = "The subscription, as 'subscription list' shows it.")
 		long subscriptionId;
 
@@ -97,7 +97,7 @@ public class SubscriptionCommand extends CliGroup {
 	}
 
 	@Command(name = "active", description = "Show a user's active subscription.")
-	public static class ActiveCommand extends CliCommand {
+	public static class ActiveCommand extends DirectorCommand {
 		@Parameters(paramLabel = "<user-id>", description = "The user.")
 		Id userId;
 
@@ -110,7 +110,7 @@ public class SubscriptionCommand extends CliGroup {
 	}
 
 	@Command(name = "add", description = "Subscribe a user to a plan.")
-	public static class AddCommand extends CliCommand {
+	public static class AddCommand extends DirectorCommand {
 		@Parameters(paramLabel = "<user-id>", description = "The user.")
 		Id userId;
 
@@ -162,7 +162,7 @@ public class SubscriptionCommand extends CliGroup {
 	}
 
 	@Command(name = "update", description = "Change a subscription's state, end or plan.")
-	public static class UpdateCommand extends CliCommand {
+	public static class UpdateCommand extends DirectorCommand {
 		@Parameters(paramLabel = "<subscription-id>", description = "The subscription, as 'subscription list' shows it.")
 		long subscriptionId;
 
@@ -210,7 +210,7 @@ public class SubscriptionCommand extends CliGroup {
 	}
 
 	@Command(name = "cancel", description = "Cancel a subscription.")
-	public static class CancelCommand extends CliCommand {
+	public static class CancelCommand extends DirectorCommand {
 		@Parameters(paramLabel = "<subscription-id>", description = "The subscription, as 'subscription list' shows it.")
 		long subscriptionId;
 

@@ -1,0 +1,152 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
+    <parent>
+        <groupId>io.bosonnetwork</groupId>
+        <artifactId>boson-parent</artifactId>
+        <version>3.1.2-SNAPSHOT</version>
+        <relativePath/>
+    </parent>
+
+    <groupId>io.bosonnetwork</groupId>
+    <artifactId>boson-cli-common</artifactId>
+    <version>3.1.2-SNAPSHOT</version>
+    <packaging>jar</packaging>
+
+    <name>Boson CLI Common</name>
+    <description>
+        What the Boson command line tools share: the root command wiring, output and tables, the
+        terminal, exit codes and error reporting, key and identity files, and the logging setup that
+        keeps a client's logs out of a command's output.
+    </description>
+    <url>https://github.com/bosonnetwork/Boson.Tools</url>
+
+    <licenses>
+        <license>
+            <name>MIT License</name>
+            <url>https://github.com/bosonnetwork/Boson.Tools/blob/master/LICENSE</url>
+            <distribution>repo</distribution>
+        </license>
+    </licenses>
+
+    <developers>
+        <developer>
+            <id>boson-network-dev</id>
+            <name>Boson Network</name>
+            <email>support@bosonnetwork.io</email>
+            <organization>BosonNetwork</organization>
+            <organizationUrl>https://github.com/bosonnetwork</organizationUrl>
+            <roles>
+                <role>architect</role>
+                <role>developer</role>
+            </roles>
+            <properties>
+                <picUrl>https://avatars.githubusercontent.com/u/152134507</picUrl>
+            </properties>
+        </developer>
+    </developers>
+
+    <scm>
+        <connection>scm:git:git@github.com:bosonnetwork/Boson.Tools.git</connection>
+        <developerConnection>scm:git:git@github.com:bosonnetwork/Boson.Tools.git</developerConnection>
+        <url>git@github.com:bosonnetwork/Boson.Tools.git</url>
+    </scm>
+
+    <properties>
+        <!-- Support for the tools, which are built from the reactor: nothing outside depends on it. -->
+        <central.skipPublishing>true</central.skipPublishing>
+    </properties>
+
+    <dependencyManagement>
+        <dependencies>
+            <dependency>
+                <groupId>io.bosonnetwork</groupId>
+                <artifactId>boson-dependencies</artifactId>
+                <version>3.1.2-SNAPSHOT</version>
+                <type>pom</type>
+                <scope>import</scope>
+            </dependency>
+        </dependencies>
+    </dependencyManagement>
+
+    <dependencies>
+        <dependency>
+            <groupId>io.bosonnetwork</groupId>
+            <artifactId>boson-api</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>info.picocli</groupId>
+            <artifactId>picocli</artifactId>
+        </dependency>
+
+        <!-- Optional in boson-api: the tools write JSON results, and read YAML configuration. -->
+        <dependency>
+            <groupId>com.fasterxml.jackson.core</groupId>
+            <artifactId>jackson-databind</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>com.fasterxml.jackson.dataformat</groupId>
+            <artifactId>jackson-dataformat-yaml</artifactId>
+        </dependency>
+
+        <!-- The tools configure logback so that nothing a client logs reaches the terminal unless the
+             verbose option asks for it (see CliLogging). -->
+        <dependency>
+            <groupId>ch.qos.logback</groupId>
+            <artifactId>logback-classic</artifactId>
+            <scope>runtime</scope>
+        </dependency>
+
+        <!-- Test dependencies -->
+        <dependency>
+            <groupId>org.junit.jupiter</groupId>
+            <artifactId>junit-jupiter</artifactId>
+            <scope>test</scope>
+        </dependency>
+    </dependencies>
+
+    <build>
+        <resources>
+            <!-- Only the version file is filtered: the logback configurations use ${...} themselves. -->
+            <resource>
+                <directory>src/main/resources</directory>
+                <filtering>true</filtering>
+                <includes>
+                    <include>**/version.properties</include>
+                </includes>
+            </resource>
+            <resource>
+                <directory>src/main/resources</directory>
+                <filtering>false</filtering>
+                <excludes>
+                    <exclude>**/version.properties</exclude>
+                </excludes>
+            </resource>
+        </resources>
+
+        <plugins>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-jar-plugin</artifactId>
+                <executions>
+                    <!-- The command test harness, shared with the tools' tests. -->
+                    <execution>
+                        <id>test-jar</id>
+                        <goals>
+                            <goal>test-jar</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
+
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-surefire-plugin</artifactId>
+            </plugin>
+        </plugins>
+    </build>
+</project>

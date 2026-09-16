@@ -55,8 +55,10 @@
     </scm>
 
     <modules>
+        <module>common</module>
         <module>cli</module>
         <module>director-cli</module>
+        <module>node</module>
     </modules>
 
     <properties>

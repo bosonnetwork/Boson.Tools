@@ -42,7 +42,7 @@ import picocli.CommandLine.ITypeConverter;
 import picocli.CommandLine.TypeConversionException;
 
 import io.bosonnetwork.Id;
-import io.bosonnetwork.cli.support.CliException;
+import io.bosonnetwork.cli.common.CliException;
 import io.bosonnetwork.director.client.Sort;
 import io.bosonnetwork.director.client.Subscription;
 import io.bosonnetwork.json.Json;

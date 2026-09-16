@@ -32,11 +32,11 @@ import picocli.CommandLine.Command;
 import picocli.CommandLine.Option;
 import picocli.CommandLine.Parameters;
 
-import io.bosonnetwork.cli.support.CliCommand;
-import io.bosonnetwork.cli.support.CliException;
-import io.bosonnetwork.cli.support.CliGroup;
-import io.bosonnetwork.cli.support.ExitCode;
-import io.bosonnetwork.cli.support.Listing;
+import io.bosonnetwork.cli.director.DirectorCommand;
+import io.bosonnetwork.cli.common.CliException;
+import io.bosonnetwork.cli.common.CliGroup;
+import io.bosonnetwork.cli.common.ExitCode;
+import io.bosonnetwork.cli.common.Listing;
 import io.bosonnetwork.director.cli.AdminViews;
 import io.bosonnetwork.director.cli.Arguments;
 import io.bosonnetwork.director.cli.Arguments.PlanRef;
@@ -69,7 +69,7 @@ public class FeatureCommand extends CliGroup {
 	}
 
 	@Command(name = "list", description = "List the features, of every plan or of one.")
-	public static class ListCommand extends CliCommand {
+	public static class ListCommand extends DirectorCommand {
 		@Option(names = "--plan", paramLabel = "<plan>", converter = Arguments.PlanRefConverter.class,
 				description = "Only the features of this plan, by id or name.")
 		PlanRef plan;
@@ -102,7 +102,7 @@ public class FeatureCommand extends CliGroup {
 	}
 
 	@Command(name = "show", description = "Show a feature and its document.")
-	public static class ShowCommand extends CliCommand {
+	public static class ShowCommand extends DirectorCommand {
 		@Parameters(paramLabel = "<feature-id>", description = "The feature, as 'feature list' shows it.")
 		int featureId;
 
@@ -118,7 +118,7 @@ public class FeatureCommand extends CliGroup {
 	}
 
 	@Command(name = "add", description = "Set what a plan grants on a service.")
-	public static class AddCommand extends CliCommand {
+	public static class AddCommand extends DirectorCommand {
 		@Parameters(index = "0", paramLabel = "<plan>", converter = Arguments.PlanRefConverter.class,
 				description = "The plan's id or name.")
 		PlanRef plan;
@@ -154,7 +154,7 @@ public class FeatureCommand extends CliGroup {
 	}
 
 	@Command(name = "update", description = "Change a feature: its service, its document, or both.")
-	public static class UpdateCommand extends CliCommand {
+	public static class UpdateCommand extends DirectorCommand {
 		@Parameters(paramLabel = "<feature-id>", description = "The feature, as 'feature list' shows it.")
 		int featureId;
 
@@ -193,7 +193,7 @@ public class FeatureCommand extends CliGroup {
 	}
 
 	@Command(name = "remove", description = "Remove a feature. Its plan gets the service's defaults.")
-	public static class RemoveCommand extends CliCommand {
+	public static class RemoveCommand extends DirectorCommand {
 		@Parameters(paramLabel = "<feature-id>", description = "The feature, as 'feature list' shows it.")
 		int featureId;
 

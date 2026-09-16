@@ -73,10 +73,17 @@
     </dependencyManagement>
 
     <dependencies>
-        <!-- Configuration, identity files, prompting, output and the shared commands. -->
+        <!-- The Director settings and identity handling, and the shared config/identity commands. -->
         <dependency>
             <groupId>io.bosonnetwork</groupId>
             <artifactId>boson-cli</artifactId>
+            <version>3.1.2-SNAPSHOT</version>
+        </dependency>
+
+        <!-- The root command wiring, output, terminal and error reporting. -->
+        <dependency>
+            <groupId>io.bosonnetwork</groupId>
+            <artifactId>boson-cli-common</artifactId>
             <version>3.1.2-SNAPSHOT</version>
         </dependency>
 
@@ -121,6 +128,13 @@
         <dependency>
             <groupId>io.bosonnetwork</groupId>
             <artifactId>boson-cli</artifactId>
+            <version>3.1.2-SNAPSHOT</version>
+            <type>test-jar</type>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>io.bosonnetwork</groupId>
+            <artifactId>boson-cli-common</artifactId>
             <version>3.1.2-SNAPSHOT</version>
             <type>test-jar</type>
             <scope>test</scope>
