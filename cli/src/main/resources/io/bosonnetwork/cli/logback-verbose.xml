@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!--
+  The command line tools' logging configuration with verbose on: everything the clients do, to
+  standard error, so that standard output still holds only the command's results. See CliLogging.
+-->
+<configuration>
+  <appender name="STDERR" class="ch.qos.logback.core.ConsoleAppender">
+    <target>System.err</target>
+    <encoder>
+      <pattern>%d{HH:mm:ss.SSS} %-5level %logger{32} - %msg%n</pattern>
+    </encoder>
+  </appender>
+
+  <logger name="io.netty" level="INFO" />
+  <logger name="io.vertx" level="INFO" />
+
+  <root level="DEBUG">
+    <appender-ref ref="STDERR" />
+  </root>
+</configuration>

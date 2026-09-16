@@ -1,0 +1,67 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
+    <parent>
+        <groupId>io.bosonnetwork</groupId>
+        <artifactId>boson-parent</artifactId>
+        <version>3.1.2-SNAPSHOT</version>
+        <relativePath/>
+    </parent>
+
+    <groupId>io.bosonnetwork</groupId>
+    <artifactId>boson-tools</artifactId>
+    <version>3.1.2-SNAPSHOT</version>
+    <packaging>pom</packaging>
+
+    <name>Boson Tools</name>
+    <description>
+        Command line tools for Boson: boson-cli, the client of a Boson super node, and
+        boson-director-cli, the administration tool of a super node.
+    </description>
+    <url>https://github.com/bosonnetwork/Boson.Tools</url>
+
+    <licenses>
+        <license>
+            <name>MIT License</name>
+            <url>https://github.com/bosonnetwork/Boson.Tools/blob/master/LICENSE</url>
+            <distribution>repo</distribution>
+        </license>
+    </licenses>
+
+    <developers>
+        <developer>
+            <id>boson-network-dev</id>
+            <name>Boson Network</name>
+            <email>support@bosonnetwork.io</email>
+            <organization>BosonNetwork</organization>
+            <organizationUrl>https://github.com/bosonnetwork</organizationUrl>
+            <roles>
+                <role>architect</role>
+                <role>developer</role>
+            </roles>
+            <properties>
+                <picUrl>https://avatars.githubusercontent.com/u/152134507</picUrl>
+            </properties>
+        </developer>
+    </developers>
+
+    <scm>
+        <connection>scm:git:git@github.com:bosonnetwork/Boson.Tools.git</connection>
+        <developerConnection>scm:git:git@github.com:bosonnetwork/Boson.Tools.git</developerConnection>
+        <url>git@github.com:bosonnetwork/Boson.Tools.git</url>
+    </scm>
+
+    <modules>
+        <module>cli</module>
+        <module>director-cli</module>
+    </modules>
+
+    <properties>
+        <!-- Only groups the tools for the build. They do not inherit from it, so nothing that depends
+             on them needs it on Maven Central. -->
+        <central.skipPublishing>true</central.skipPublishing>
+    </properties>
+</project>
