@@ -205,15 +205,57 @@
     </build>
 
     <!--
-        Netty's native transport for the platform being built, as the DHT runner carries it: a node
-        runs for months and the native transport is measurably better at it, while the libraries stay
-        free of platform-specific jars. The profile ids match the ones distribution/build-macos.sh
-        toggles with -P, so a cross build selects the same platform here as everywhere else.
+        Netty's native transport for the platform being built: a node runs for months and the native
+        transport is measurably better at it, while the libraries stay free of platform-specific jars.
+
+        The platform is chosen with -Dtarget.platform=<id>, the same switch the distribution build
+        takes, so a cross build selects the same platform here as everywhere else. Each platform has
+        two profiles: one naming it explicitly, and one for the host's own platform when the property
+        is absent. The absent property is part of the second activation, so naming a platform
+        switches the host default off - without that, both would activate on a cross build and the
+        package would carry two platforms' natives.
+
+        windows-x86_64 has no profile on purpose: Netty ships no native transport for Windows, which
+        falls back to NIO.
     -->
     <profiles>
+
         <profile>
             <id>macos-aarch64</id>
             <activation>
+                <property>
+                    <name>target.platform</name>
+                    <value>macos-aarch64</value>
+                </property>
+            </activation>
+            <dependencies>
+                <dependency>
+                    <groupId>io.netty</groupId>
+                    <artifactId>netty-transport-native-kqueue</artifactId>
+                    <classifier>osx-aarch_64</classifier>
+                    <scope>runtime</scope>
+                </dependency>
+                <dependency>
+                    <groupId>io.netty</groupId>
+                    <artifactId>netty-resolver-dns-native-macos</artifactId>
+                    <classifier>osx-aarch_64</classifier>
+                    <scope>runtime</scope>
+                </dependency>
+                <dependency>
+                    <groupId>io.netty</groupId>
+                    <artifactId>netty-transport-native-unix-common</artifactId>
+                    <classifier>osx-aarch_64</classifier>
+                    <scope>runtime</scope>
+                </dependency>
+            </dependencies>
+        </profile>
+
+        <profile>
+            <id>host-macos-aarch64</id>
+            <activation>
+                <property>
+                    <name>!target.platform</name>
+                </property>
                 <os>
                     <family>mac</family>
                     <arch>aarch64</arch>
@@ -242,40 +284,42 @@
         </profile>
 
         <profile>
-            <id>macos-x86_64</id>
+            <id>linux-x86_64</id>
             <activation>
-                <os>
-                    <family>mac</family>
-                    <arch>x86_64</arch>
-                </os>
+                <property>
+                    <name>target.platform</name>
+                    <value>linux-x86_64</value>
+                </property>
             </activation>
             <dependencies>
                 <dependency>
                     <groupId>io.netty</groupId>
-                    <artifactId>netty-transport-native-kqueue</artifactId>
-                    <classifier>osx-x86_64</classifier>
+                    <artifactId>netty-transport-native-epoll</artifactId>
+                    <classifier>linux-x86_64</classifier>
                     <scope>runtime</scope>
                 </dependency>
                 <dependency>
                     <groupId>io.netty</groupId>
-                    <artifactId>netty-resolver-dns-native-macos</artifactId>
-                    <classifier>osx-x86_64</classifier>
+                    <artifactId>netty-transport-native-io_uring</artifactId>
+                    <classifier>linux-x86_64</classifier>
                     <scope>runtime</scope>
                 </dependency>
                 <dependency>
                     <groupId>io.netty</groupId>
                     <artifactId>netty-transport-native-unix-common</artifactId>
-                    <classifier>osx-x86_64</classifier>
+                    <classifier>linux-x86_64</classifier>
                     <scope>runtime</scope>
                 </dependency>
             </dependencies>
         </profile>
 
         <profile>
-            <id>linux-x86_64</id>
+            <id>host-linux-x86_64</id>
             <activation>
+                <property>
+                    <name>!target.platform</name>
+                </property>
                 <os>
-                    <family>unix</family>
                     <name>linux</name>
                     <arch>amd64</arch>
                 </os>
@@ -305,8 +349,40 @@
         <profile>
             <id>linux-aarch64</id>
             <activation>
+                <property>
+                    <name>target.platform</name>
+                    <value>linux-aarch64</value>
+                </property>
+            </activation>
+            <dependencies>
+                <dependency>
+                    <groupId>io.netty</groupId>
+                    <artifactId>netty-transport-native-epoll</artifactId>
+                    <classifier>linux-aarch_64</classifier>
+                    <scope>runtime</scope>
+                </dependency>
+                <dependency>
+                    <groupId>io.netty</groupId>
+                    <artifactId>netty-transport-native-io_uring</artifactId>
+                    <classifier>linux-aarch_64</classifier>
+                    <scope>runtime</scope>
+                </dependency>
+                <dependency>
+                    <groupId>io.netty</groupId>
+                    <artifactId>netty-transport-native-unix-common</artifactId>
+                    <classifier>linux-aarch_64</classifier>
+                    <scope>runtime</scope>
+                </dependency>
+            </dependencies>
+        </profile>
+
+        <profile>
+            <id>host-linux-aarch64</id>
+            <activation>
+                <property>
+                    <name>!target.platform</name>
+                </property>
                 <os>
-                    <family>unix</family>
                     <name>linux</name>
                     <arch>aarch64</arch>
                 </os>
@@ -332,5 +408,6 @@
                 </dependency>
             </dependencies>
         </profile>
+
     </profiles>
 </project>
