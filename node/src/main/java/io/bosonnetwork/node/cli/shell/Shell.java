@@ -35,6 +35,7 @@ import picocli.CommandLine;
 import picocli.CommandLine.Command;
 import picocli.CommandLine.HelpCommand;
 
+import io.bosonnetwork.cli.common.Converters;
 import io.bosonnetwork.cli.common.ExitCode;
 
 /**
@@ -85,6 +86,8 @@ public class Shell {
 				.setErr(out)
 				.setCaseInsensitiveEnumValuesAllowed(true)
 				.setExecutionExceptionHandler((e, cmd, parseResult) -> report(cmd.getErr(), e));
+
+		Converters.registerAll(commandLine);
 
 		// Usage lines are "Usage: " followed by the command's qualified name, which starts with its
 		// parent's. The root of these commands has no name, which would leave two spaces there.
