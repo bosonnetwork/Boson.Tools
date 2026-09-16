@@ -40,7 +40,7 @@ import picocli.CommandLine.ScopeType;
 import picocli.CommandLine.Spec;
 import picocli.CommandLine.UnmatchedArgumentException;
 
-import io.bosonnetwork.Id;
+import io.bosonnetwork.json.Json;
 
 /**
  * The root command of a Boson tool: the options every command takes, the help and error conventions,
@@ -72,6 +72,7 @@ public abstract class CliApp implements Callable<Integer> {
 	 */
 	protected CliApp(CliEnvironment environment) {
 		this.environment = environment;
+		Json.initializeBosonJsonModule();
 	}
 
 	/**
@@ -163,7 +164,7 @@ public abstract class CliApp implements Callable<Integer> {
 		commandLine.setOut(environment.out());
 		commandLine.setErr(environment.err());
 		commandLine.setCaseInsensitiveEnumValuesAllowed(true);
-		commandLine.registerConverter(Id.class, new IdConverter());
+		Converters.registerAll(commandLine);
 		commandLine.setParameterExceptionHandler(CliApp::handleParameterException);
 		commandLine.setExecutionExceptionHandler((e, cl, parseResult) ->
 				ErrorReporter.report(e, errorTranslator(), cl.getErr(), commonOptions.verbose()));

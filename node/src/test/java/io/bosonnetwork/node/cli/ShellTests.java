@@ -164,6 +164,21 @@ class ShellTests {
 	}
 
 	@Test
+	void anIdArgumentIsReadRatherThanRefused() throws Exception {
+		// The argument converts before the command runs: without a node it stops at the node, which is
+		// as far as this can get without one. A missing converter would stop it at the argument.
+		String output = session("find node " + io.bosonnetwork.Id.random() + "\nexit\n");
+		assertTrue(output.contains("The node is not running"), output);
+		assertFalse(output.contains("TypeConverter"), output);
+	}
+
+	@Test
+	void anInvalidIdIsRefusedWithItsOwnMessage() throws Exception {
+		String output = session("find node not-an-id\nexit\n");
+		assertTrue(output.contains("not a valid id"), output);
+	}
+
+	@Test
 	void aFailureIsDescribedByItsCause() {
 		assertEquals("IllegalStateException: Node not running",
 				Shell.describe(new ExecutionException(new CompletionException(new IllegalStateException("Node not running")))));
