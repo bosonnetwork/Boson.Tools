@@ -22,9 +22,10 @@ replaces `core/dht-runner`, which stays in place until the distribution is switc
 mvn package
 ```
 
-Each module leaves a runnable tool in `target/dist`: `bin/boson-cli` (or `bin/boson-director-cli`) and
-`lib/`. The launcher runs the JRE bundled beside it when there is one, then `$JAVA_HOME`, then `java` on
-the `PATH`; Java 17 or later.
+Each module leaves a runnable tool in `target/dist`: `bin/boson-cli.sh`, `bin/boson-director-cli.sh` or
+`bin/boson-node.sh`, and `lib/`. The launcher runs the JRE bundled beside it when there is one, then
+`$JAVA_HOME`, then `java` on the `PATH`; Java 17 or later. The `.sh` suffix keeps these distinct from the
+Rust tools of the same names while both are installed.
 
 ## Getting started
 
