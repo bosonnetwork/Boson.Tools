@@ -22,6 +22,7 @@
 
 package io.bosonnetwork.node.cli;
 
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -182,6 +183,13 @@ class BosonNodeTests {
 		assertEquals(4, cache.exitCode(), cache::toString);
 		assertTrue(cache.err().contains("No saved routing table"), cache::toString);
 		assertTrue(cache.err().contains("Hint:"), cache::toString);
+	}
+
+	@Test
+	void theServiceLauncherIsTheRunCommand() {
+		assertArrayEquals(new String[] {"run", "-c", "/etc/boson/bootstrap/node.yaml"},
+				NodeLauncher.asRunCommand(new String[] {"-c", "/etc/boson/bootstrap/node.yaml"}));
+		assertArrayEquals(new String[] {"run"}, NodeLauncher.asRunCommand(new String[0]));
 	}
 
 	@Test
