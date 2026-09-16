@@ -13,8 +13,9 @@ They hold no protocol code of their own: the first two are built on the clients 
 output, terminal, exit codes and error reporting - is in `boson-cli-common`, so every tool takes the
 same global options and reports failures the same way.
 
-`boson-cli` and `boson-director-cli` replace the earlier Rust tools of the same names. `boson-node`
-replaces `core/dht-runner`, which stays in place until the distribution is switched over to it.
+`boson-cli` and `boson-director-cli` replace the earlier Rust tools of the same names, and
+`boson-node` replaces `core/dht-runner`. The distribution is built from these three tools: the
+bootstrap package runs a node through `NodeLauncher`, and its setup wizard is `boson-node setup`.
 
 ## Build
 
@@ -23,9 +24,13 @@ mvn package
 ```
 
 Each module leaves a runnable tool in `target/dist`: `bin/boson-cli.sh`, `bin/boson-director-cli.sh` or
-`bin/boson-node.sh`, and `lib/`. The launcher runs the JRE bundled beside it when there is one, then
-`$JAVA_HOME`, then `java` on the `PATH`; Java 17 or later. The `.sh` suffix keeps these distinct from the
-Rust tools of the same names while both are installed.
+`bin/boson-node.sh`, and `lib/`. A `.cmd` launcher sits beside each `.sh` one, and is what the Windows
+distribution ships. Either runs the JRE bundled beside it when there is one, then `$JAVA_HOME`, then
+`java` on the `PATH`; Java 17 or later.
+
+The `.sh` suffix keeps these distinct from the Rust tools of the same names while both are installed.
+The packages link them into `/usr/bin` without it, so what an operator types stays `boson-node`,
+`boson-cli` and `boson-director-cli`.
 
 ## Getting started
 
