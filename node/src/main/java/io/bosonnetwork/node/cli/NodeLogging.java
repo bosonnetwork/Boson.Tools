@@ -57,6 +57,13 @@ public final class NodeLogging {
 	 * @param args the command line
 	 */
 	public static void configure(String[] args) {
+		// Help and version are output like any other, whatever command they are asked of: a node's
+		// logging must not land in front of them.
+		if (asksForHelp(args)) {
+			CliLogging.configure(args);
+			return;
+		}
+
 		String command = firstCommand(args);
 
 		if ("run".equals(command))
@@ -68,6 +75,11 @@ public final class NodeLogging {
 		}
 
 		CliLogging.configure(args);
+	}
+
+	private static boolean asksForHelp(String[] args) {
+		return Arrays.stream(args).anyMatch(arg ->
+				arg.equals("-h") || arg.equals("--help") || arg.equals("-V") || arg.equals("--version"));
 	}
 
 	// The first argument that is not an option or an option's value; good enough to tell the commands
