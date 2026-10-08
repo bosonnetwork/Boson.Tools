@@ -58,7 +58,7 @@ import io.bosonnetwork.web.PaginatedResult;
 @Command(name = "user", description = "Manage the users of the node.",
 		subcommands = {UserCommand.ListCommand.class, UserCommand.ShowCommand.class, UserCommand.AddCommand.class,
 				UserCommand.UpdateCommand.class, UserCommand.RemoveCommand.class, UserCommand.GrantAdminCommand.class,
-				UserCommand.RevokeAdminCommand.class})
+				UserCommand.RevokeAdminCommand.class, EnrollAdminCommand.class})
 public class UserCommand extends CliGroup {
 
 	@Command(name = "list", description = "List the users.")

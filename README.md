@@ -157,7 +157,7 @@ util keygen | check-key | public-key | sign | hex-to-base58 | base58-to-hex
 `boson-director-cli`:
 
 ```
-user list | show | add | update | remove | grant-admin | revoke-admin
+user list | show | add | update | remove | grant-admin | revoke-admin | enroll-admin
 device list | show | add | remove
 plan list | show | add | update | activate | deactivate
 feature list | show | add | update | remove
@@ -173,6 +173,11 @@ config ... | identity ...
 
 List commands show one page (`--page`, `--page-size`) or everything (`--all`), and say how to get the
 next page.
+
+`user enroll-admin` makes the user of a Boson Identity app an administrator, by QR code: it shows a code
+that holds no credential (`boson:enroll:1:...`), the first app to scan it shows a number, and typing that
+number approves. The user gets an account if it has none. Run it on the node's console, as root or as an
+administrator; `--public-url` names the Director's address when phones reach it at another one.
 
 `boson-node`:
 

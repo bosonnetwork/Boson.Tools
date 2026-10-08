@@ -204,6 +204,81 @@ public class BosonDirectorCliTests {
 		assertEquals(Boolean.TRUE, director.requests("PUT", "/api/v1/admin/users/" + userId).get(0).json().get("admin"));
 	}
 
+	// An enrollment request the stub opens and an app claims.
+	private Id enrollment(boolean withUrl) {
+		Id requestId = Id.random();
+		director.reply("POST", "/api/v1/admin/enrollments", 201, "{\"requestId\": \"" + requestId + "\", \"nodeId\": \"" +
+				nodeId + "\", \"expiresIn\": 600" + (withUrl ? ", \"url\": \"https://node.example\"" : "") + "}");
+		director.reply("GET", "/api/v1/admin/enrollments/" + requestId, 200, "{\"requestId\": \"" + requestId +
+				"\", \"state\": \"claimed\", \"expiresIn\": 590, \"triesLeft\": 3, \"userId\": \"" + Id.random() +
+				"\", \"deviceId\": \"" + Id.random() + "\", \"deviceName\": \"Pixel 9\", \"app\": \"Boson Identity\", " +
+				"\"member\": false, \"requestedFrom\": \"192.0.2.7\"}");
+		director.reply("DELETE", "/api/v1/admin/enrollments/" + requestId, 204, "");
+		return requestId;
+	}
+
+	@Test
+	void anAdministratorIsEnrolledWithTheNumberOnThePhone(@TempDir Path dir) {
+		Id requestId = enrollment(true);
+		Id userId = Id.random();
+		java.util.concurrent.atomic.AtomicInteger calls = new java.util.concurrent.atomic.AtomicInteger();
+		director.handle("POST", "/api/v1/admin/enrollments/" + requestId + "/approve", request ->
+				calls.incrementAndGet() == 1 ?
+						StubDirector.Reply.json(200, "{\"approved\": false, \"triesLeft\": 2}") :
+						StubDirector.Reply.json(200, "{\"approved\": true, \"userId\": \"" + userId + "\", \"created\": true}"));
+
+		Result result = admin(dir).runWithInput("x\n12\n47\n", "user", "enroll-admin", "--qr", "ASCII");
+		assertEquals(0, result.exitCode(), result::toString);
+		String code = "boson:enroll:1:" + requestId + ":" + nodeId + ":https://node.example";
+		assertTrue(result.out().contains(code), result::toString);
+		assertTrue(result.out().contains("##"), "the QR code is drawn: " + result);
+		assertTrue(result.out().contains("Pixel 9 (Boson Identity)"), result::toString);
+		assertTrue(result.out().contains("That is not a number"), result::toString);
+		assertTrue(result.out().contains("2 tries left"), result::toString);
+		assertTrue(result.out().contains("User " + userId + " is now an administrator of this node, with a new account."),
+				result::toString);
+
+		List<StubDirector.Request> approvals = director.requests("POST", "/api/v1/admin/enrollments/" + requestId + "/approve");
+		assertEquals(2, approvals.size());
+		assertEquals(12, ((Number) approvals.get(0).json().get("number")).intValue());
+		assertEquals(47, ((Number) approvals.get(1).json().get("number")).intValue());
+		assertTrue(director.requests("DELETE", "/api/v1/admin/enrollments/" + requestId).isEmpty());
+	}
+
+	@Test
+	void anEnrollmentIsDeniedWithN(@TempDir Path dir) {
+		Id requestId = enrollment(true);
+		Result result = admin(dir).runWithInput("n\n", "user", "enroll-admin");
+		assertEquals(1, result.exitCode(), result::toString);
+		assertTrue(result.err().contains("Denied; nothing was changed."), result::toString);
+		assertFalse(director.requests("DELETE", "/api/v1/admin/enrollments/" + requestId).isEmpty());
+		assertTrue(director.requests("POST", "/api/v1/admin/enrollments/" + requestId + "/approve").isEmpty());
+	}
+
+	@Test
+	void anEnrollmentNeedsTheAddressPhonesReach(@TempDir Path dir) {
+		Id requestId = enrollment(false);
+		Result result = admin(dir).runWithInput("", "user", "enroll-admin");
+		assertEquals(2, result.exitCode(), result::toString);
+		assertTrue(result.err().contains("--public-url"), result::toString);
+		// The request it opened is not left behind.
+		assertFalse(director.requests("DELETE", "/api/v1/admin/enrollments/" + requestId).isEmpty());
+
+		director.reply("POST", "/api/v1/admin/enrollments/" + requestId + "/approve", 200,
+				"{\"approved\": true, \"userId\": \"" + Id.random() + "\", \"created\": false}");
+		Result given = admin(dir).runWithInput("47\n", "user", "enroll-admin", "--public-url", "http://10.0.0.5:8080/");
+		assertEquals(0, given.exitCode(), given::toString);
+		assertTrue(given.out().contains(":" + nodeId + ":http://10.0.0.5:8080"), given::toString);
+	}
+
+	@Test
+	void anEnrollmentHasNoJsonOutput(@TempDir Path dir) {
+		enrollment(true);
+		Result result = admin(dir).run("--json", "user", "enroll-admin");
+		assertEquals(2, result.exitCode(), result::toString);
+		assertTrue(director.requests("POST", "/api/v1/admin/enrollments").isEmpty());
+	}
+
 	@Test
 	void anUnknownUserIsNotFound(@TempDir Path dir) {
 		Id userId = Id.random();
