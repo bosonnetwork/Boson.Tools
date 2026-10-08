@@ -83,6 +83,12 @@
             <artifactId>picocli</artifactId>
         </dependency>
 
+        <!-- QR codes rendered in the terminal (AsciiQRCode). -->
+        <dependency>
+            <groupId>com.google.zxing</groupId>
+            <artifactId>core</artifactId>
+        </dependency>
+
         <!-- Optional in boson-api: the tools write JSON results, and read YAML configuration. -->
         <dependency>
             <groupId>com.fasterxml.jackson.core</groupId>

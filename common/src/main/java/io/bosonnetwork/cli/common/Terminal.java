@@ -81,6 +81,28 @@ public final class Terminal {
 	}
 
 	/**
+	 * Reads a line the user types, after a prompt; without a terminal, one line of standard input.
+	 *
+	 * @param prompt the prompt, such as {@code "Number: "}
+	 * @return the line, stripped, or {@code null} at the end of the input
+	 * @throws CliException if standard input can't be read
+	 */
+	public String readLine(String prompt) {
+		Console console = environment.console();
+		String line;
+		if (console != null) {
+			line = console.readLine("%s", prompt);
+		} else {
+			try {
+				line = environment.stdin().readLine();
+			} catch (IOException e) {
+				throw CliException.failed("Cannot read standard input: " + e.getMessage(), null);
+			}
+		}
+		return line == null ? null : line.strip();
+	}
+
+	/**
 	 * Reads a secret: without echo on a terminal, otherwise one line of standard input.
 	 *
 	 * @param prompt the prompt, such as {@code "Passphrase: "}
