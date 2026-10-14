@@ -55,6 +55,8 @@ import io.bosonnetwork.cli.common.ExitCode;
 			FindCommand.class,
 			StoreCommand.class,
 			AnnounceCommand.class,
+			SubscribeCommand.class,
+			UnsubscribeCommand.class,
 			RoutingCommand.class,
 			StorageCommand.class,
 			CacheCommand.class,

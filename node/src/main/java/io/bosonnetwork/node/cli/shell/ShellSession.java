@@ -22,6 +22,10 @@
 
 package io.bosonnetwork.node.cli.shell;
 
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
+
+import io.bosonnetwork.Subscription;
 import io.bosonnetwork.cli.common.CliException;
 import io.bosonnetwork.cli.common.ExitCode;
 import io.bosonnetwork.cli.common.Output;
@@ -35,6 +39,9 @@ public final class ShellSession {
 	private final KadNode node;
 	private final Output output;
 	private final Terminal terminal;
+	// The subscriptions made at this shell, by "value <id>" or "peer <id>". Written by commands, read by
+	// listeners on the node's context.
+	private final Map<String, Subscription> subscriptions = new ConcurrentHashMap<>();
 
 	/**
 	 * Creates the session of a shell.
@@ -87,5 +94,14 @@ public final class ShellSession {
 	 */
 	public Terminal terminal() {
 		return terminal;
+	}
+
+	/**
+	 * Returns the subscriptions made at this shell, keyed by {@code "value <id>"} or {@code "peer <id>"}.
+	 *
+	 * @return the subscriptions
+	 */
+	public Map<String, Subscription> subscriptions() {
+		return subscriptions;
 	}
 }
