@@ -163,16 +163,36 @@ plan list | show | add | update | activate | deactivate
 feature list | show | add | update | remove
 subscription list | show | active | add | update | cancel
 blacklist list | show | add | update | remove
-federation node list | show | update | remove
+federation node list | show | admit | suspend | propose | remove | describe | health
 federation service list
-federation proposal list | show | remove
-federation propose
+federation proposal list | show | accept | decline | remove
 node id | status
 config ... | identity ...
 ```
 
 List commands show one page (`--page`, `--page-size`) or everything (`--all`), and say how to get the
 next page.
+
+Federation node lists and details show the relationship's origin: `admin` for an operator's decision,
+`protocol` for an agreement by proposal, or `auto` for a proposal made on demand by the node. Node
+JSON includes `origin`, with `null` when it is absent. `federation node show` distinguishes admitted,
+pending and refused admission. Its `Sending to it` field describes the current outbound policy:
+allowed, held or refused. An allowed policy does not confirm that any message was sent or delivered.
+`federation node describe` and `federation service list` show what the remote node publishes in its
+signed descriptor.
+
+```sh
+boson-director-cli federation node list
+boson-director-cli federation node show <node-id>
+boson-director-cli federation proposal list --role answer --status pending
+```
+
+`federation proposal remove <proposal-id>` (alias `withdraw`) withdraws a pending outgoing offer,
+retaining it in history, or deletes a finished proposal. A pending incoming proposal must be accepted
+or declined. Both command names have the same behavior. Success says "withdrawn or removed" because
+the API does not distinguish these outcomes in its response. Its JSON result is
+`{"id":7,"processed":true}`; this replaces the earlier `removed` flag, which incorrectly implied
+that the history entry was always deleted.
 
 `user enroll-admin` makes the user of a Boson Identity app an administrator, by QR code: it shows a code
 that holds no credential (`boson:enroll:1:...`), the first app to scan it shows a number, and typing that
