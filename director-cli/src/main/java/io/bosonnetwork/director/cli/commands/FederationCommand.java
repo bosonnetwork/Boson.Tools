@@ -325,7 +325,8 @@ public class FederationCommand extends CliGroup {
 		}
 
 		@Command(name = "remove", aliases = "withdraw",
-				description = "Withdraw a pending proposal this node made, or remove a finished proposal from the record.")
+				description = {"Withdraw a pending proposal this node made, or remove a finished proposal from the record.",
+						"A withdrawn proposal stays in history. The 'withdraw' alias has the same effect as 'remove'."})
 		public static class RemoveCommand extends DirectorCommand {
 			@Parameters(paramLabel = "<proposal-id>", description = "The proposal.")
 			long id;
@@ -342,9 +343,9 @@ public class FederationCommand extends CliGroup {
 				}
 
 				if (output().isJson())
-					output().json(Map.of("id", id, "removed", true));
+					output().json(Map.of("id", id, "processed", true));
 				else
-					output().message("Removed proposal " + id + ".");
+					output().message("Proposal " + id + " withdrawn or removed.");
 			}
 		}
 	}

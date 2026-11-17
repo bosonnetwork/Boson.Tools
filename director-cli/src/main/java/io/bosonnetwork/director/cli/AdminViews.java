@@ -55,7 +55,7 @@ public final class AdminViews {
 	/** The table headers of a blacklist. */
 	public static final List<String> BLACKLIST_HEADERS = List.of("ID", "NODE ID", "HOST", "AUTO", "REASON", "CREATED");
 	/** The table headers of a federated node list. */
-	public static final List<String> FEDERATED_NODE_HEADERS = List.of("NODE ID", "STATE", "ADMISSION", "NOTE", "UPDATED");
+	public static final List<String> FEDERATED_NODE_HEADERS = List.of("NODE ID", "STATE", "ORIGIN", "ADMISSION", "NOTE", "UPDATED");
 	/** The table headers of a federated service list. */
 	public static final List<String> FEDERATED_SERVICE_HEADERS = List.of("SERVICE TYPE", "NAME", "PEER ID", "ENDPOINT", "FEDERATION");
 	/** The table headers of a list of nodes' health. */
@@ -328,6 +328,7 @@ public final class AdminViews {
 	public static List<String> federatedNodeRow(FederatedNode node) {
 		return List.of(node.getId().toBase58String(),
 				state(node),
+				Formats.text(node.getOrigin()),
 				admission(node),
 				Formats.text(node.getNote()),
 				node.getUpdatedAt() > 0 ? Formats.time(node.getUpdatedAt()) : "-");
@@ -343,10 +344,16 @@ public final class AdminViews {
 		Map<String, String> rows = new LinkedHashMap<>();
 		rows.put("Node id", node.getId().toBase58String());
 		rows.put("Relationship", node.getState().isPresent() ? state(node) : "none (the federation mode decides)");
-		rows.put("Admission", admission(node) + (node.isAdmitted() ? " (admitted)" : " (refused)"));
+		rows.put("Origin", Formats.text(node.getOrigin()));
+		rows.put("Admission", node.getAdmission().map(r -> r.name().toLowerCase(Locale.ROOT) +
+				switch (r.decision()) {
+					case ALLOW -> " (admitted)";
+					case PENDING -> " (pending)";
+					case DENY -> " (refused)";
+				}).orElse("-"));
 		node.getReach().ifPresent(r -> rows.put("Sending to it", r.name().toLowerCase(Locale.ROOT) +
 				switch (r.decision()) {
-					case ALLOW -> " (sent)";
+					case ALLOW -> " (allowed)";
 					case PENDING -> " (held)";
 					case DENY -> " (refused)";
 				}));
@@ -445,6 +452,7 @@ public final class AdminViews {
 		Map<String, Object> json = new LinkedHashMap<>();
 		json.put("nodeId", node.getId());
 		json.put("state", node.getState().map(st -> st.name().toLowerCase(Locale.ROOT)).orElse(null));
+		json.put("origin", node.getOrigin().orElse(null));
 		json.put("admission", node.getAdmission().map(Enum::name).orElse(null));
 		json.put("admitted", node.isAdmitted());
 		json.put("reach", node.getReach().map(Enum::name).orElse(null));
