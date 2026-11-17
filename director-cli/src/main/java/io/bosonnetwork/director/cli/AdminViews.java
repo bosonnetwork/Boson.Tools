@@ -30,6 +30,7 @@ import java.util.Map;
 import io.bosonnetwork.cli.common.Formats;
 import io.bosonnetwork.director.client.BlacklistedNode;
 import io.bosonnetwork.director.client.Feature;
+import io.bosonnetwork.director.client.FederatedHost;
 import io.bosonnetwork.director.client.FederatedNode;
 import io.bosonnetwork.director.client.FederatedNodeHealth;
 import io.bosonnetwork.director.client.FederationProposal;
@@ -60,6 +61,8 @@ public final class AdminViews {
 	public static final List<String> FEDERATED_SERVICE_HEADERS = List.of("SERVICE TYPE", "NAME", "PEER ID", "ENDPOINT", "FEDERATION");
 	/** The table headers of a list of nodes' health. */
 	public static final List<String> FEDERATED_NODE_HEALTH_HEADERS = List.of("NODE ID", "LAST SEEN", "LAST SUCCESS", "FAILURES IN A ROW", "LAST FAILURE", "LAST HOUR", "WANTED");
+	/** The table headers of host observations. */
+	public static final List<String> FEDERATED_HOST_HEADERS = List.of("HOST", "VERIFIED NODES", "FAILED NODES", "NOT FEDERATING NODES", "LAST CHECKED");
 	/** The table headers of a federation proposal list. */
 	public static final List<String> FEDERATION_PROPOSAL_HEADERS = List.of("ID", "NODE ID", "ROLE", "STATUS", "NOTE", "CREATED");
 
@@ -460,6 +463,36 @@ public final class AdminViews {
 		json.put("createdAt", node.getCreatedAt());
 		json.put("updatedAt", node.getUpdatedAt());
 		json.put("health", node.getHealth().map(AdminViews::federatedNodeHealthJson).orElse(null));
+		return json;
+	}
+
+	/**
+	 * Returns the table row of a host observation.
+	 *
+	 * @param host the host observation
+	 * @return the row
+	 */
+	public static List<String> federatedHostRow(FederatedHost host) {
+		return List.of(host.getHost().orElse("Unresolved host"),
+				Integer.toString(host.getVerifiedNodes()),
+				Integer.toString(host.getFailedNodes()),
+				Integer.toString(host.getNotFederatingNodes()),
+				Formats.time(host.getLastCheckedAt()));
+	}
+
+	/**
+	 * Returns the JSON of a host observation.
+	 *
+	 * @param host the host observation
+	 * @return the JSON object
+	 */
+	public static Map<String, Object> federatedHostJson(FederatedHost host) {
+		Map<String, Object> json = new LinkedHashMap<>();
+		json.put("host", host.getHost().orElse(null));
+		json.put("verifiedNodes", host.getVerifiedNodes());
+		json.put("failedNodes", host.getFailedNodes());
+		json.put("notFederatingNodes", host.getNotFederatingNodes());
+		json.put("lastCheckedAt", host.getLastCheckedAt());
 		return json;
 	}
 

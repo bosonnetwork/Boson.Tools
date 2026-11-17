@@ -40,6 +40,7 @@ import io.bosonnetwork.cli.common.PageOptions;
 import io.bosonnetwork.director.cli.AdminViews;
 import io.bosonnetwork.director.cli.Arguments;
 import io.bosonnetwork.director.client.DirectorAdmin;
+import io.bosonnetwork.director.client.FederatedHost;
 import io.bosonnetwork.director.client.FederatedNode;
 import io.bosonnetwork.director.client.FederatedNodeHealth;
 import io.bosonnetwork.director.client.FederationProposal;
@@ -55,9 +56,11 @@ import io.bosonnetwork.web.PaginatedResult;
 		"In open mode every node is admitted unless blacklisted or suspended here; in mutual mode the nodes this node "
 				+ "agreed with by proposal, and the ones admitted here; in allowlist mode only the nodes admitted here. "
 				+ "A node that does not federate answers every command here with an error."},
-		subcommands = {FederationCommand.NodeGroup.class, FederationCommand.ProposalGroup.class,
+		subcommands = {FederationCommand.NodeGroup.class, FederationCommand.HostGroup.class, FederationCommand.ProposalGroup.class,
 				FederationCommand.ServiceGroup.class})
 public class FederationCommand extends CliGroup {
+	private static final String NODE_FILTER_DESCRIPTION = "Only this node's existing records, matched by complete ID.";
+
 	// What the federation commands share: showing a node, and fetching a node's descriptor.
 	abstract static class FederationNodeCommand extends DirectorCommand {
 		void show(FederatedNode node, String message) {
@@ -81,15 +84,19 @@ public class FederationCommand extends CliGroup {
 	public static class NodeGroup extends CliGroup {
 		@Command(name = "list", description = "List the nodes this node has a relationship with: admitted, suspended, pending or declined.")
 		public static class ListCommand extends DirectorCommand {
+			@Option(names = "--node", paramLabel = "<node-id>", description = NODE_FILTER_DESCRIPTION)
+			Id nodeId;
+
 			@Mixin
 			PageOptions paging;
 
 			@Override
 			protected void run() throws Exception {
 				DirectorAdmin admin = context().directorAdmin();
-				PaginatedResult<FederatedNode> page = paging.fetch(this, admin::listFederatedNodes);
+				PaginatedResult<FederatedNode> page = paging.fetch(this, (p, size) -> admin.listFederatedNodes(nodeId, p, size));
 				Listing.page(output(), page, paging, "nodes", AdminViews.FEDERATED_NODE_HEADERS, AdminViews::federatedNodeRow,
-						AdminViews::federatedNodeJson, "This node has no relationship with any node.");
+						AdminViews::federatedNodeJson, nodeId == null ? "This node has no relationship with any node." :
+								"No relationship with node " + nodeId + ".");
 			}
 		}
 
@@ -97,16 +104,20 @@ public class FederationCommand extends CliGroup {
 				"Every node heard from within the last day is listed, whether this node has a relationship with it or not. "
 						+ "The node keeps this in memory: it starts empty after a restart."})
 		public static class HealthCommand extends DirectorCommand {
+			@Option(names = "--node", paramLabel = "<node-id>", description = NODE_FILTER_DESCRIPTION)
+			Id nodeId;
+
 			@Mixin
 			PageOptions paging;
 
 			@Override
 			protected void run() throws Exception {
 				DirectorAdmin admin = context().directorAdmin();
-				PaginatedResult<FederatedNodeHealth> page = paging.fetch(this, admin::listFederatedNodeHealth);
+				PaginatedResult<FederatedNodeHealth> page = paging.fetch(this, (p, size) -> admin.listFederatedNodeHealth(nodeId, p, size));
 				Listing.page(output(), page, paging, "nodes", AdminViews.FEDERATED_NODE_HEALTH_HEADERS,
 						AdminViews::federatedNodeHealthRow, AdminViews::federatedNodeHealthJson,
-						"No node has been heard from within the last day.");
+						nodeId == null ? "No node has been heard from within the last day." :
+								"No activity for node " + nodeId + " within the last day.");
 			}
 		}
 
@@ -239,6 +250,31 @@ public class FederationCommand extends CliGroup {
 		}
 	}
 
+	@Command(name = "host", description = "Local descriptor checks grouped by destination host.",
+			subcommands = {HostGroup.ListCommand.class})
+	public static class HostGroup extends CliGroup {
+		@Command(name = "list", description = {"List local descriptor-check observations by destination host.",
+				"IPv4 addresses are counted separately; IPv6 addresses are grouped by /64. Counts describe distinct nodes and can overlap.",
+				"The node keeps this bounded information in memory: it starts empty after a restart. Reading it starts no remote lookups."})
+		public static class ListCommand extends DirectorCommand {
+			@Option(names = "--host", paramLabel = "<text>",
+					description = "Only hosts containing this literal text, ignoring case; 'unresolved' matches checks without a host.")
+			String host;
+
+			@Mixin
+			PageOptions paging;
+
+			@Override
+			protected void run() throws Exception {
+				DirectorAdmin admin = context().directorAdmin();
+				PaginatedResult<FederatedHost> page = paging.fetch(this, (p, size) -> admin.listFederatedHosts(host, p, size));
+				Listing.page(output(), page, paging, "hosts", AdminViews.FEDERATED_HOST_HEADERS,
+						AdminViews::federatedHostRow, AdminViews::federatedHostJson,
+						host == null || host.isBlank() ? "No recent host observations." : "No matching host observations.");
+			}
+		}
+	}
+
 	@Command(name = "proposal", description = "Proposals: the ones this node made, and the ones other nodes made to it.",
 			subcommands = {ProposalGroup.ListCommand.class, ProposalGroup.ShowCommand.class, ProposalGroup.AcceptCommand.class,
 					ProposalGroup.DeclineCommand.class, ProposalGroup.RemoveCommand.class})
@@ -273,6 +309,9 @@ public class FederationCommand extends CliGroup {
 
 		@Command(name = "list", description = "List the proposals, latest first.")
 		public static class ListCommand extends DirectorCommand {
+			@Option(names = "--node", paramLabel = "<node-id>", description = NODE_FILTER_DESCRIPTION)
+			Id nodeId;
+
 			@Option(names = "--role", paramLabel = "<role>", description = "Only these: offer (this node proposed) or answer (another node did).")
 			FederationProposal.Role role;
 
@@ -286,9 +325,10 @@ public class FederationCommand extends CliGroup {
 			protected void run() throws Exception {
 				DirectorAdmin admin = context().directorAdmin();
 				PaginatedResult<FederationProposal> page = paging.fetch(this,
-						(p, size) -> admin.listFederationProposals(role, status, p, size));
+						(p, size) -> admin.listFederationProposals(nodeId, role, status, p, size));
 				Listing.page(output(), page, paging, "proposals", AdminViews.FEDERATION_PROPOSAL_HEADERS,
-						AdminViews::federationProposalRow, AdminViews::federationProposalJson, "No proposals.");
+						AdminViews::federationProposalRow, AdminViews::federationProposalJson,
+						nodeId == null && role == null && status == null ? "No proposals." : "No matching proposals.");
 			}
 		}
 
