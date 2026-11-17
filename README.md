@@ -164,6 +164,7 @@ feature list | show | add | update | remove
 subscription list | show | active | add | update | cancel
 blacklist list | show | add | update | remove
 federation node list | show | admit | suspend | propose | remove | describe | health
+federation host list
 federation service list
 federation proposal list | show | accept | decline | remove
 node id | status
@@ -185,6 +186,34 @@ signed descriptor.
 boson-director-cli federation node list
 boson-director-cli federation node show <node-id>
 boson-director-cli federation proposal list --role answer --status pending
+```
+
+`federation node list`, `federation node health` and `federation proposal list` accept
+`--node <node-id>` to select an exact remote node ID. This is separate from the global `--node-id`,
+which identifies the Director being administered. IDs accept Base58, `0x`-prefixed hex or
+`did:boson:` format. Proposal node, role and status filters are combined. Filters apply on the server
+before counting and pagination, including every page fetched by `--all`; reading these lists starts
+no discovery or verification.
+
+`federation host list` shows local descriptor-check observations by destination: verified, failed
+and non-federating node counts, plus the last check time. IPv4 addresses are separate; IPv6 addresses
+are grouped by /64, independently of the HTTP rate-limit prefix setting. Counts describe distinct
+node IDs and can overlap when a failed refresh coexists with a retained verified descriptor; do not
+sum the columns into a distinct-node total. Failed checks do not imply malicious behavior. These
+bounded observations are kept in memory and start empty after a restart; reading them starts no
+remote lookups.
+
+Use `--host <text>` for a case-insensitive literal substring of the displayed host key; blank text
+means all hosts. `--host unresolved` selects checks without a known host, displayed as "Unresolved
+host" and represented by `"host": null` in JSON. This text filter does not perform DNS, regular
+expression or CIDR lookups. Host lists support the same pagination options and `--json`.
+
+```sh
+boson-director-cli federation node list --node <remote-node-id>
+boson-director-cli federation node health --node <remote-node-id>
+boson-director-cli federation proposal list --node <remote-node-id> --role answer --status pending --all
+boson-director-cli federation host list --host 192.0.2. --all
+boson-director-cli federation host list --host unresolved --json
 ```
 
 `federation proposal remove <proposal-id>` (alias `withdraw`) withdraws a pending outgoing offer,

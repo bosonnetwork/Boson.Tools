@@ -29,13 +29,17 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.io.PrintWriter;
 import java.io.Writer;
+import java.net.URLDecoder;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.LocalDate;
 import java.time.ZoneId;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
 import org.junit.jupiter.api.AfterAll;
@@ -49,10 +53,13 @@ import picocli.CommandLine.TypeConversionException;
 
 import io.bosonnetwork.Id;
 import io.bosonnetwork.cli.common.CliEnvironment;
+import io.bosonnetwork.cli.common.Formats;
 import io.bosonnetwork.cli.common.testing.CliRunner;
 import io.bosonnetwork.cli.common.testing.CliRunner.Result;
 import io.bosonnetwork.cli.testing.StubDirector;
 import io.bosonnetwork.crypto.Signature;
+import io.bosonnetwork.cwt.Claim;
+import io.bosonnetwork.cwt.SignedCwt;
 import io.bosonnetwork.utils.Base58;
 
 /**
@@ -91,6 +98,11 @@ public class BosonDirectorCliTests {
 	private static String profileJson(Id userId, String name) {
 		return "{\"id\": \"" + userId + "\", \"name\": \"" + name + "\", \"planName\": \"Free\", \"admin\": false, " +
 				"\"createdAt\": 1700000000000, \"updatedAt\": 1700000000000, \"passphraseProtected\": false}";
+	}
+
+	private static String hostJson(String host, int verified, int failed, int notFederating, long checkedAt) {
+		return "{\"host\":" + (host == null ? "null" : "\"" + host + "\"") + ",\"verifiedNodes\":" + verified +
+				",\"failedNodes\":" + failed + ",\"notFederatingNodes\":" + notFederating + ",\"lastCheckedAt\":" + checkedAt + "}";
 	}
 
 	@Test
@@ -363,6 +375,74 @@ public class BosonDirectorCliTests {
 	}
 
 	@Test
+	void federationListsSendNodeFiltersToTheServer(@TempDir Path dir) throws Exception {
+		Id home = Id.random();
+		Id peer = Id.random();
+		director.nodeId(home);
+		String[][] commands = {{"node", "list", "nodes"}, {"node", "health", "health"}, {"proposal", "list", "proposals"}};
+		for (String[] command : commands) {
+			String path = "/api/v1/admin/federation/" + command[2];
+			director.reply("GET", path, 200, "{\"page\":2,\"pageSize\":3,\"totalItems\":0,\"totalPages\":0,\"items\":[]}");
+			for (String id : List.of(peer.toBase58String(), peer.toHexString(), "did:boson:" + peer, " " + peer + " ")) {
+				List<String> args = new ArrayList<>(List.of("--node-id", home.toBase58String(), "federation", command[0], command[1],
+						"--node", id, "--page", "2", "--page-size", "3", "--json"));
+				if (command[0].equals("proposal"))
+					args.addAll(List.of("--role", "ANSWER", "--status", "PENDING"));
+
+				director.requests().clear();
+				Result result = admin(dir).run(args.toArray(new String[0]));
+				assertEquals(0, result.exitCode(), result::toString);
+				StubDirector.Request request = director.requests("GET", path).get(0);
+				String query = request.query();
+				assertTrue(query.contains("nodeId=" + peer.toBase58String()), query);
+				assertTrue(query.contains("page=2") && query.contains("pageSize=3"), query);
+				if (command[0].equals("proposal"))
+					assertTrue(query.contains("role=answer") && query.contains("status=pending"), query);
+				SignedCwt token = SignedCwt.parse(request.header("Authorization").substring("Bearer ".length()));
+				assertEquals(home, token.getClaimAsId(Claim.AUDIENCE.getValue()));
+				assertEquals(2, ((Number) result.json().get("page")).longValue());
+				assertEquals(3, ((Number) result.json().get("pageSize")).longValue());
+				assertEquals(0, ((Number) result.json().get("totalItems")).longValue());
+				assertTrue(((List<?>) result.json().get("items")).isEmpty());
+			}
+		}
+	}
+
+	@Test
+	void invalidFederationNodeFiltersNeverContactTheDirector(@TempDir Path dir) {
+		String[][] commands = {{"node", "list"}, {"node", "health"}, {"proposal", "list"}};
+		for (String[] command : commands) {
+			for (String id : List.of("", "invalid!", "123", "0x1234")) {
+				Result result = admin(dir).run("federation", command[0], command[1], "--node", id);
+				assertEquals(2, result.exitCode(), result::toString);
+				assertTrue(result.err().contains("not a valid id"), result::toString);
+				assertTrue(director.requests().isEmpty());
+			}
+		}
+	}
+
+	@Test
+	void filteredFederationListsReportNoMatches(@TempDir Path dir) {
+		Id peer = Id.random();
+		String[][] commands = {
+				{"node", "list", "nodes", "No relationship with node " + peer + "."},
+				{"node", "health", "health", "No activity for node " + peer + " within the last day."},
+				{"proposal", "list", "proposals", "No matching proposals."}};
+		for (String[] command : commands) {
+			String path = "/api/v1/admin/federation/" + command[2];
+			director.reply("GET", path, 200, "{\"page\":1,\"pageSize\":100,\"totalItems\":0,\"totalPages\":0,\"items\":[]}");
+
+			Result result = admin(dir).run("federation", command[0], command[1], "--node", peer.toBase58String(), "--all");
+			assertEquals(0, result.exitCode(), result::toString);
+			assertTrue(result.out().contains(command[3]), result::toString);
+			String query = director.requests("GET", path).get(0).query();
+			assertTrue(query.contains("nodeId=" + peer.toBase58String()) && query.contains("pageSize=100"), query);
+			assertEquals(1, director.requests("GET", path).size());
+			assertTrue(director.requests("GET", "/api/v1/admin/federation/nodes/" + peer).isEmpty());
+		}
+	}
+
+	@Test
 	void nodeListsAndDetailsKeepTheRelationshipOrigin(@TempDir Path dir) {
 		Id peer = Id.random();
 		String path = "/api/v1/admin/federation/nodes/" + peer;
@@ -534,6 +614,38 @@ public class BosonDirectorCliTests {
 	}
 
 	@Test
+	void proposalsRetainAllFiltersAcrossPages(@TempDir Path dir) {
+		Id peer = Id.random();
+		String path = "/api/v1/admin/federation/proposals";
+		List<String> proposals = new ArrayList<>();
+		for (int id = 1; id <= 101; id++) {
+			proposals.add("{\"id\":" + id + ",\"nodeId\":\"" + peer +
+					"\",\"role\":\"answer\",\"status\":\"pending\",\"createdAt\":1,\"updatedAt\":1}");
+		}
+		String first = "{\"page\":1,\"pageSize\":100,\"totalItems\":101,\"totalPages\":2,\"items\":[" +
+				String.join(",", proposals.subList(0, 100)) + "]}";
+		String last = "{\"page\":2,\"pageSize\":100,\"totalItems\":101,\"totalPages\":2,\"items\":[" + proposals.get(100) + "]}";
+		director.handle("GET", path, request -> StubDirector.Reply.json(200, request.query().contains("page=1&") ? first : last));
+
+		Result result = admin(dir).run("federation", "proposal", "list", "--node", peer.toBase58String(),
+				"--role", "answer", "--status", "pending", "--all", "--json");
+		assertEquals(0, result.exitCode(), result::toString);
+		List<StubDirector.Request> requests = director.requests("GET", path);
+		assertEquals(2, requests.size());
+		for (int i = 0; i < requests.size(); i++) {
+			String query = requests.get(i).query();
+			assertTrue(query.contains("nodeId=" + peer.toBase58String()), query);
+			assertTrue(query.contains("role=answer") && query.contains("status=pending"), query);
+			assertTrue(query.contains("page=" + (i + 1) + "&") && query.contains("pageSize=100"), query);
+		}
+		assertEquals(101, ((Number) result.json().get("totalItems")).longValue());
+		List<?> items = (List<?>) result.json().get("items");
+		assertEquals(101, items.size());
+		assertEquals(1, ((Number) ((Map<?, ?>) items.get(0)).get("id")).longValue());
+		assertEquals(101, ((Number) ((Map<?, ?>) items.get(100)).get("id")).longValue());
+	}
+
+	@Test
 	void healthListsTheNodesHeardFrom(@TempDir Path dir) {
 		Id peer = Id.random();
 		director.reply("GET", "/api/v1/admin/federation/health", 200,
@@ -545,6 +657,135 @@ public class BosonDirectorCliTests {
 		assertEquals(0, result.exitCode(), result::toString);
 		assertTrue(result.out().contains(peer.toBase58String()), result::toString);
 		assertTrue(result.out().contains("success 5, timeout 3"), result::toString);
+	}
+
+	@Test
+	void hostsShowDescriptorCheckCountsAndUnresolvedChecks(@TempDir Path dir) {
+		String ipv4 = hostJson("192.0.2.5", 3, 2, 1, 1700000000000L);
+		String ipv6 = hostJson("2001:db8:1234:5678::/64", 0, 0, 0, 0);
+		String unresolved = hostJson(null, 0, 4, 1, 1700000001000L);
+		director.reply("GET", "/api/v1/admin/federation/hosts", 200,
+				"{\"page\":1,\"pageSize\":20,\"totalItems\":3,\"totalPages\":1,\"items\":[" + ipv4 + "," + ipv6 + "," + unresolved + "]}");
+
+		Result result = admin(dir).run("federation", "host", "list");
+		assertEquals(0, result.exitCode(), result::toString);
+		assertTrue(result.out().contains("VERIFIED NODES"), result::toString);
+		assertTrue(result.out().contains("FAILED NODES"), result::toString);
+		assertTrue(result.out().contains("NOT FEDERATING NODES"), result::toString);
+		List<String> rows = result.out().lines().toList();
+		assertEquals(List.of("192.0.2.5", "3", "2", "1", Formats.time(1700000000000L)),
+				Arrays.asList(rows.get(1).split("\\s{2,}")));
+		assertEquals(List.of("2001:db8:1234:5678::/64", "0", "0", "0", "-"), Arrays.asList(rows.get(2).split("\\s{2,}")));
+		assertEquals(List.of("Unresolved host", "0", "4", "1", Formats.time(1700000001000L)),
+				Arrays.asList(rows.get(3).split("\\s{2,}")));
+
+		Result json = admin(dir).run("federation", "host", "list", "--json");
+		assertEquals(0, json.exitCode(), json::toString);
+		assertEquals(3, ((Number) json.json().get("totalItems")).longValue());
+		List<?> items = (List<?>) json.json().get("items");
+		assertEquals(3, items.size());
+		Map<?, ?> first = (Map<?, ?>) items.get(0);
+		assertEquals(Set.of("host", "verifiedNodes", "failedNodes", "notFederatingNodes", "lastCheckedAt"), first.keySet());
+		assertEquals("192.0.2.5", first.get("host"));
+		assertEquals(3, first.get("verifiedNodes"));
+		assertEquals(2, first.get("failedNodes"));
+		assertEquals(1, first.get("notFederatingNodes"));
+		assertEquals(1700000000000L, first.get("lastCheckedAt"));
+		assertEquals("2001:db8:1234:5678::/64", ((Map<?, ?>) items.get(1)).get("host"));
+		Map<?, ?> unknown = (Map<?, ?>) items.get(2);
+		assertTrue(unknown.containsKey("host"), json::toString);
+		assertEquals(null, unknown.get("host"));
+		assertEquals(0, unknown.get("verifiedNodes"));
+		assertFalse(director.requests("GET", "/api/v1/admin/federation/hosts").get(0).query().contains("host="));
+	}
+
+	@Test
+	void hostFiltersPassLiteralTextToTheServer(@TempDir Path dir) {
+		String path = "/api/v1/admin/federation/hosts";
+		director.reply("GET", path, 200, "{\"page\":1,\"pageSize\":20,\"totalItems\":0,\"totalPages\":0,\"items\":[]}");
+		for (String host : List.of(" 2001:DB8::/64 ", " unresolved ", "192.0.2.", " a+b &%?*[] ", "   ", "")) {
+			director.requests().clear();
+			Result result = admin(dir).run("federation", "host", "list", "--host", host);
+			assertEquals(0, result.exitCode(), result::toString);
+			String query = director.requests("GET", path).get(0).query();
+			String[] parameters = query.split("&");
+			if (host.isBlank()) {
+				assertEquals(2, parameters.length, query);
+				assertFalse(query.contains("host="), query);
+				assertTrue(result.out().contains("No recent host observations."), result::toString);
+			} else {
+				assertEquals(3, parameters.length, query);
+				String value = Arrays.stream(parameters).filter(p -> p.startsWith("host=")).findFirst().orElseThrow();
+				assertEquals(host.strip(), URLDecoder.decode(value.substring("host=".length()), StandardCharsets.UTF_8));
+				assertTrue(result.out().contains("No matching host observations."), result::toString);
+			}
+		}
+	}
+
+	@Test
+	void hostsCanBePagedOrDrainedWithTheSameFilter(@TempDir Path dir) {
+		String path = "/api/v1/admin/federation/hosts";
+		List<String> hosts = new ArrayList<>();
+		for (int i = 1; i <= 101; i++)
+			hosts.add(hostJson("192.0.2." + i, 1, 0, 0, 1));
+		String first = "{\"page\":1,\"pageSize\":100,\"totalItems\":101,\"totalPages\":2,\"items\":[" +
+				String.join(",", hosts.subList(0, 100)) + "]}";
+		String last = "{\"page\":2,\"pageSize\":100,\"totalItems\":101,\"totalPages\":2,\"items\":[" + hosts.get(100) + "]}";
+		String beyond = "{\"page\":3,\"pageSize\":100,\"totalItems\":101,\"totalPages\":2,\"items\":[]}";
+		director.handle("GET", path, request -> StubDirector.Reply.json(200,
+				request.query().contains("page=1&") ? first : request.query().contains("page=2&") ? last : beyond));
+
+		Result page = admin(dir).run("federation", "host", "list", "--host", "192.0.2.", "--page", "2", "--page-size", "100", "--json");
+		assertEquals(0, page.exitCode(), page::toString);
+		assertEquals(2, ((Number) page.json().get("page")).longValue());
+		assertEquals(101, ((Number) page.json().get("totalItems")).longValue());
+		assertEquals(2, ((Number) page.json().get("totalPages")).longValue());
+		assertEquals(1, ((List<?>) page.json().get("items")).size());
+
+		Result empty = admin(dir).run("federation", "host", "list", "--host", "192.0.2.", "--page", "3", "--page-size", "100");
+		assertEquals(0, empty.exitCode(), empty::toString);
+		assertTrue(empty.out().contains("Page 3 is past the end: there are 2 pages of hosts."), empty::toString);
+
+		director.requests().clear();
+		Result all = admin(dir).run("federation", "host", "list", "--host", "192.0.2.", "--all", "--json");
+		assertEquals(0, all.exitCode(), all::toString);
+		List<StubDirector.Request> requests = director.requests("GET", path);
+		assertEquals(2, requests.size());
+		for (int i = 0; i < requests.size(); i++) {
+			String query = requests.get(i).query();
+			assertTrue(query.contains("host=192.0.2."), query);
+			assertTrue(query.contains("page=" + (i + 1) + "&") && query.contains("pageSize=100"), query);
+		}
+		assertEquals(101, ((Number) all.json().get("totalItems")).longValue());
+		List<?> items = (List<?>) all.json().get("items");
+		assertEquals(101, items.size());
+		assertEquals("192.0.2.1", ((Map<?, ?>) items.get(0)).get("host"));
+		assertEquals("192.0.2.101", ((Map<?, ?>) items.get(100)).get("host"));
+	}
+
+	@Test
+	void hostsKeepSharedPaginationAndErrorHandling(@TempDir Path dir) {
+		String[][] invalid = {{"--page", "0"}, {"--page-size", "0"}, {"--page-size", "1001"},
+				{"--all", "--page", "1"}, {"--all", "--page-size", "1"}};
+		for (String[] options : invalid) {
+			List<String> args = new ArrayList<>(List.of("federation", "host", "list"));
+			args.addAll(List.of(options));
+			Result result = admin(dir).run(args.toArray(new String[0]));
+			assertEquals(2, result.exitCode(), result::toString);
+			assertTrue(director.requests().isEmpty());
+		}
+
+		Map<Integer, Integer> errors = Map.of(501, 1, 403, 5, 429, 7, 503, 7);
+		for (var error : errors.entrySet()) {
+			director.reply("GET", "/api/v1/admin/federation/hosts", error.getKey(),
+					error.getKey() == 501 ? "Not Implemented - Federation is not enabled" : "Test refusal");
+			Result result = admin(dir).run("federation", "host", "list", "--host", "unresolved", "--json");
+			assertEquals(error.getValue(), result.exitCode(), result::toString);
+			assertTrue(result.out().isEmpty(), result::toString);
+			assertFalse(result.err().contains("Exception"), result::toString);
+			if (error.getKey() == 501)
+				assertTrue(result.err().contains("Federation is not enabled"), result::toString);
+		}
 	}
 
 	@Test
