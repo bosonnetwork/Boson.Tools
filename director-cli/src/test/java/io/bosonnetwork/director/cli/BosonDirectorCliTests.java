@@ -100,6 +100,11 @@ public class BosonDirectorCliTests {
 				"\"createdAt\": 1700000000000, \"updatedAt\": 1700000000000, \"passphraseProtected\": false}";
 	}
 
+	private static String proposalJson(Id nodeId, String role, String status, long answeredAt) {
+		return "{\"id\":7,\"nodeId\":\"" + nodeId + "\",\"role\":\"" + role + "\",\"status\":\"" + status +
+				"\",\"note\":\"Partner\",\"createdAt\":1,\"updatedAt\":2,\"answeredAt\":" + answeredAt + "}";
+	}
+
 	private static String hostJson(String host, int verified, int failed, int notFederating, long checkedAt) {
 		return "{\"host\":" + (host == null ? "null" : "\"" + host + "\"") + ",\"verifiedNodes\":" + verified +
 				",\"failedNodes\":" + failed + ",\"notFederatingNodes\":" + notFederating + ",\"lastCheckedAt\":" + checkedAt + "}";
@@ -375,6 +380,72 @@ public class BosonDirectorCliTests {
 	}
 
 	@Test
+	void suspendingANodeSendsTheStateAndNote(@TempDir Path dir) {
+		Id peer = Id.random();
+		String path = "/api/v1/admin/federation/nodes/" + peer;
+		director.reply("PUT", path, 200,
+				"{\"nodeId\":\"" + peer + "\",\"state\":\"suspended\",\"origin\":\"admin\",\"note\":\"Maintenance\"," +
+						"\"admission\":\"SUSPENDED\",\"createdAt\":1,\"updatedAt\":2}");
+
+		Result result = admin(dir).run("federation", "node", "suspend", peer.toBase58String(), "--note", " Maintenance ");
+		assertEquals(0, result.exitCode(), result::toString);
+		assertTrue(result.out().contains("Suspended node " + peer + "."), result::toString);
+		Map<String, Object> body = director.requests("PUT", path).get(0).json();
+		assertEquals("suspended", body.get("state"));
+		assertEquals("Maintenance", body.get("note"));
+
+		Result json = admin(dir).run("federation", "node", "suspend", peer.toBase58String(), "--note", "Maintenance", "--json");
+		assertEquals(0, json.exitCode(), json::toString);
+		assertEquals(peer.toBase58String(), json.json().get("nodeId"));
+		assertEquals("suspended", json.json().get("state"));
+		assertEquals("admin", json.json().get("origin"));
+		assertEquals("SUSPENDED", json.json().get("admission"));
+		assertEquals(Boolean.FALSE, json.json().get("admitted"));
+	}
+
+	@Test
+	void removingARelationshipNeedsConfirmation(@TempDir Path dir) {
+		Id peer = Id.random();
+		String path = "/api/v1/admin/federation/nodes/" + peer;
+		director.reply("DELETE", path, 204, "");
+
+		Result unconfirmed = admin(dir).run("federation", "node", "remove", peer.toBase58String());
+		assertEquals(2, unconfirmed.exitCode(), unconfirmed::toString);
+		assertTrue(unconfirmed.err().contains("--yes"), unconfirmed::toString);
+		assertTrue(director.requests("DELETE", path).isEmpty());
+
+		Result piped = admin(dir).runWithInput("yes\n", "federation", "node", "remove", peer.toBase58String());
+		assertEquals(2, piped.exitCode(), piped::toString);
+		assertTrue(director.requests("DELETE", path).isEmpty());
+
+		Result result = admin(dir).run("federation", "node", "remove", peer.toBase58String(), "--yes");
+		assertEquals(0, result.exitCode(), result::toString);
+		assertTrue(result.out().contains("Removed the relationship with node " + peer + "."), result::toString);
+		assertEquals(1, director.requests("DELETE", path).size());
+		assertTrue(director.requests("DELETE", path).get(0).body().isEmpty());
+
+		Result json = admin(dir).run("federation", "node", "remove", peer.toBase58String(), "--yes", "--json");
+		assertEquals(0, json.exitCode(), json::toString);
+		assertEquals(peer.toBase58String(), json.json().get("nodeId"));
+		assertEquals(Boolean.TRUE, json.json().get("removed"));
+		assertEquals(2, director.requests("DELETE", path).size());
+	}
+
+	@Test
+	void removingAnUnknownRelationshipIsNotFound(@TempDir Path dir) {
+		Id peer = Id.random();
+		String path = "/api/v1/admin/federation/nodes/" + peer;
+		director.reply("DELETE", path, 404, "Not Found");
+
+		Result result = admin(dir).run("federation", "node", "remove", peer.toBase58String(), "--yes", "--json");
+		assertEquals(4, result.exitCode(), result::toString);
+		assertTrue(result.err().contains("This node has no relationship with node " + peer + "."), result::toString);
+		assertTrue(result.err().contains("federation node list"), result::toString);
+		assertTrue(result.out().isEmpty(), result::toString);
+		assertEquals(1, director.requests("DELETE", path).size());
+	}
+
+	@Test
 	void federationListsSendNodeFiltersToTheServer(@TempDir Path dir) throws Exception {
 		Id home = Id.random();
 		Id peer = Id.random();
@@ -538,12 +609,139 @@ public class BosonDirectorCliTests {
 	}
 
 	@Test
-	void answeringAProposalThatWaitsForNoAnswerFails(@TempDir Path dir) {
-		director.reply("POST", "/api/v1/admin/federation/proposals/7/accept", 409, "not pending");
+	void proposingReportsTheReturnedOutcome(@TempDir Path dir) {
+		Id peer = Id.random();
+		String path = "/api/v1/admin/federation/proposals";
+		String[][] outcomes = {
+				{"offer", "pending", "Proposed to node " + peer + " (proposal 7); waiting for its answer."},
+				{"offer", "accepted", "Node " + peer + " accepted. The relationship is active."},
+				{"offer", "declined", "Node " + peer + " declined."},
+				{"answer", "accepted", "Node " + peer + " had proposed: accepted its proposal. The relationship is active."}};
+		for (String[] outcome : outcomes) {
+			director.reply("POST", path, 200, proposalJson(peer, outcome[0], outcome[1], outcome[1].equals("pending") ? 0 : 2));
 
-		Result result = admin(dir).run("federation", "proposal", "accept", "7");
-		assertTrue(result.exitCode() != 0, result::toString);
-		assertTrue(result.err().contains("not one waiting for this node's answer"), result::toString);
+			Result result = admin(dir).run("federation", "node", "propose", peer.toBase58String());
+			assertEquals(0, result.exitCode(), result::toString);
+			assertTrue(result.out().contains(outcome[2]), result::toString);
+
+			Result json = admin(dir).run("federation", "node", "propose", peer.toBase58String(), "--json");
+			assertEquals(0, json.exitCode(), json::toString);
+			assertEquals(7, ((Number) json.json().get("id")).longValue());
+			assertEquals(peer.toBase58String(), json.json().get("nodeId"));
+			assertEquals(outcome[0], json.json().get("role"));
+			assertEquals(outcome[1], json.json().get("status"));
+		}
+	}
+
+	@Test
+	void proposingToAnActiveRelationshipReportsTheConflict(@TempDir Path dir) {
+		Id peer = Id.random();
+		director.reply("POST", "/api/v1/admin/federation/proposals", 409, "The relationship with the node is already active");
+
+		Result result = admin(dir).run("federation", "node", "propose", peer.toBase58String(), "--json");
+		assertEquals(1, result.exitCode(), result::toString);
+		assertTrue(result.err().contains("The relationship with node " + peer + " is already active."), result::toString);
+		assertTrue(result.err().contains("federation node show " + peer), result::toString);
+		assertTrue(result.out().isEmpty(), result::toString);
+	}
+
+	@Test
+	void proposalsCanBeShownAsDetailsOrJson(@TempDir Path dir) {
+		Id peer = Id.random();
+		String path = "/api/v1/admin/federation/proposals/7";
+		String[][] proposals = {{"offer", "pending", "offer (this node proposed)"}, {"answer", "accepted", "answer (the node proposed)"}};
+		for (String[] proposal : proposals) {
+			long answeredAt = proposal[1].equals("pending") ? 0 : 2;
+			director.reply("GET", path, 200, proposalJson(peer, proposal[0], proposal[1], answeredAt));
+
+			Result result = admin(dir).run("federation", "proposal", "show", "7");
+			assertEquals(0, result.exitCode(), result::toString);
+			assertTrue(result.out().contains(peer.toBase58String()), result::toString);
+			assertTrue(result.out().contains(proposal[2]), result::toString);
+			assertTrue(result.out().contains(proposal[1]), result::toString);
+			assertTrue(result.out().contains("Partner"), result::toString);
+			assertEquals(answeredAt > 0, result.out().contains("Answered:"), result::toString);
+
+			Result json = admin(dir).run("federation", "proposal", "show", "7", "--json");
+			assertEquals(0, json.exitCode(), json::toString);
+			assertEquals(7, ((Number) json.json().get("id")).longValue());
+			assertEquals(peer.toBase58String(), json.json().get("nodeId"));
+			assertEquals(proposal[0], json.json().get("role"));
+			assertEquals(proposal[1], json.json().get("status"));
+			assertEquals("Partner", json.json().get("note"));
+			assertEquals(1, ((Number) json.json().get("createdAt")).longValue());
+			assertEquals(2, ((Number) json.json().get("updatedAt")).longValue());
+			assertTrue(json.json().containsKey("answeredAt"), json::toString);
+			if (answeredAt == 0)
+				assertEquals(null, json.json().get("answeredAt"));
+			else
+				assertEquals(answeredAt, ((Number) json.json().get("answeredAt")).longValue());
+		}
+	}
+
+	@Test
+	void showingAnUnknownProposalIsNotFound(@TempDir Path dir) {
+		director.reply("GET", "/api/v1/admin/federation/proposals/7", 404, "Not Found");
+
+		Result result = admin(dir).run("federation", "proposal", "show", "7", "--json");
+		assertEquals(4, result.exitCode(), result::toString);
+		assertTrue(result.err().contains("No proposal 7."), result::toString);
+		assertTrue(result.err().contains("federation proposal list"), result::toString);
+		assertTrue(result.out().isEmpty(), result::toString);
+	}
+
+	@Test
+	void receivedProposalsCanBeAcceptedOrDeclined(@TempDir Path dir) {
+		Id peer = Id.random();
+		String[][] answers = {{"accept", "accepted", "Accepted"}, {"decline", "declined", "Declined"}};
+		for (String[] answer : answers) {
+			String path = "/api/v1/admin/federation/proposals/7/" + answer[0];
+			director.reply("POST", path, 200, proposalJson(peer, "answer", answer[1], 2));
+
+			director.requests().clear();
+			Result result = admin(dir).run("federation", "proposal", answer[0], "7");
+			assertEquals(0, result.exitCode(), result::toString);
+			assertTrue(result.out().contains(answer[2] + " node " + peer + "'s proposal."), result::toString);
+			assertEquals(1, director.requests("POST", path).size());
+			assertTrue(director.requests("POST", path).get(0).body().isEmpty());
+
+			director.requests().clear();
+			Result json = admin(dir).run("federation", "proposal", answer[0], "7", "--json");
+			assertEquals(0, json.exitCode(), json::toString);
+			assertEquals(7, ((Number) json.json().get("id")).longValue());
+			assertEquals(peer.toBase58String(), json.json().get("nodeId"));
+			assertEquals("answer", json.json().get("role"));
+			assertEquals(answer[1], json.json().get("status"));
+			assertEquals(2, ((Number) json.json().get("answeredAt")).longValue());
+			assertEquals(1, director.requests("POST", path).size());
+			assertTrue(director.requests("POST", path).get(0).body().isEmpty());
+		}
+	}
+
+	@Test
+	void answeringAnUnknownProposalIsNotFound(@TempDir Path dir) {
+		for (String verb : List.of("accept", "decline")) {
+			director.reply("POST", "/api/v1/admin/federation/proposals/7/" + verb, 404, "No such proposal");
+
+			Result result = admin(dir).run("federation", "proposal", verb, "7", "--json");
+			assertEquals(4, result.exitCode(), result::toString);
+			assertTrue(result.err().contains("No proposal 7."), result::toString);
+			assertTrue(result.err().contains("federation proposal list --role answer --status pending"), result::toString);
+			assertTrue(result.out().isEmpty(), result::toString);
+		}
+	}
+
+	@Test
+	void answeringAProposalThatWaitsForNoAnswerFails(@TempDir Path dir) {
+		for (String verb : List.of("accept", "decline")) {
+			director.reply("POST", "/api/v1/admin/federation/proposals/7/" + verb, 409, "not pending");
+
+			Result result = admin(dir).run("federation", "proposal", verb, "7", "--json");
+			assertEquals(1, result.exitCode(), result::toString);
+			assertTrue(result.err().contains("not one waiting for this node's answer"), result::toString);
+			assertTrue(result.err().contains("federation proposal show 7"), result::toString);
+			assertTrue(result.out().isEmpty(), result::toString);
+		}
 	}
 
 	@Test
