@@ -98,12 +98,6 @@ public final class ConfigFile {
 	/** The settings holding a flag. */
 	public static final List<String> FLAG_KEYS = List.of(PROXY_NAME_ACCESS, PROXY_ANNOUNCE);
 
-	// What the setup wizard of earlier Director versions called privateKey. The same literal is
-	// io.bosonnetwork.director.Setup.RENAMED_ROOT_USER_KEY, whose --migrate mode performs the rename
-	// this class only reports. Keep the two in step; neither module depends on the other, so they
-	// cannot share one constant.
-	private static final String RENAMED_ROOT_USER_KEY = "rootUserKey";
-
 	// A value that YAML reads as the same string without quotes: no leading indicator character, no
 	// ": " or " #", and not a word YAML reads as a boolean or null.
 	private static final Pattern PLAIN_SCALAR = Pattern.compile("[A-Za-z0-9._/~+=-][A-Za-z0-9._/~+=:@\\[\\]-]*");
@@ -154,12 +148,6 @@ public final class ConfigFile {
 			String key = field.getKey();
 			JsonNode value = field.getValue();
 
-			if (key.equals(RENAMED_ROOT_USER_KEY))
-				// Reported rather than fixed: rewriting a file the user owns on what is only a read would be a
-				// surprise. The deb package migrates root's copy on upgrade, so this is for everyone else.
-				throw CliException.config("The configuration file " + path + " sets rootUserKey, which is now called privateKey.",
-						"Run 'boson.sh --setup --migrate --file " + path + "' from the Boson distribution, " +
-								"or rename rootUserKey to privateKey in that file yourself.");
 			if (!keys.contains(key))
 				throw CliException.config("Unknown setting '" + key + "' in " + path + ".",
 						"The settings are: " + String.join(", ", keys) + ".");

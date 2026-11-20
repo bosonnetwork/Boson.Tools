@@ -224,18 +224,6 @@ public class BosonCliTests {
 	}
 
 	@Test
-	void theRenamedRootUserKeyIsNamed(@TempDir Path dir) throws Exception {
-		Files.createDirectories(configFile(dir).getParent());
-		Files.writeString(configFile(dir), "url: " + director.url() + "\nrootUserKey: 3Jx\n");
-
-		Result result = cli(dir).run("user", "show");
-		assertEquals(3, result.exitCode(), result::toString);
-		assertTrue(result.err().contains("now called privateKey"), result::toString);
-		// Names the migration, pointed at this very file rather than the wizard's default path.
-		assertTrue(result.err().contains("boson.sh --setup --migrate --file " + configFile(dir)), result::toString);
-	}
-
-	@Test
 	void aMissingUrlIsAConfigurationError(@TempDir Path dir) {
 		Result result = cli(dir).run("user", "show");
 		assertEquals(3, result.exitCode(), result::toString);
